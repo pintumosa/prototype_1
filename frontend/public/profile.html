@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile — WinzoIndia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-testid="profile-page">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand"><div class="brand-mark">W</div><div class="brand-name">Winzo<span>India</span></div></a>
+      <ul class="nav-links">
+        <li><a href="dashboard.html">Lobby</a></li>
+        <li><a href="ludo.html">Ludo</a></li>
+        <li><a href="snake-ladder.html">Snake &amp; Ladder</a></li>
+        <li><a href="profile.html" class="active">Profile</a></li>
+      </ul>
+      <a href="https://wa.me/919812543183" target="_blank" rel="noopener" class="wz-helpline" title="WhatsApp Helpline"><i class="ph-fill ph-whatsapp-logo"></i><span> +91-9812543183</span></a>
+      <div class="nav-actions">
+        <a href="dashboard.html" class="btn btn-secondary"><i class="ph ph-house"></i> Dashboard</a>
+        <a href="#" id="logout-btn" class="btn btn-primary" data-testid="profile-logout-btn">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="profile-shell">
+    <div class="card profile-header" data-testid="profile-header">
+      <div class="avatar" style="background-image:url('https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg')"></div>
+      <div class="profile-meta">
+        <h1 data-testid="profile-name">—</h1>
+        <span data-testid="profile-email">—</span>
+        <div>
+          <span id="kyc-badge" class="kyc-badge" data-testid="profile-kyc-badge">
+            <i class="ph-fill ph-check-circle"></i> KYC Verified
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;">Account Details</h2>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><span>Full Name</span><strong data-testid="info-fullname">—</strong></div>
+        <div class="info-item"><span>Phone</span><strong data-testid="info-phone">—</strong></div>
+        <div class="info-item"><span>Email</span><strong data-testid="info-email">—</strong></div>
+        <div class="info-item"><span>KYC Document</span><strong data-testid="info-kyc-type">—</strong></div>
+
+        <div class="info-item"><span>Member Since</span><strong data-testid="info-since">—</strong></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;">Change Password</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:400px;">
+        <input id="cp-current" type="password" placeholder="Current password" class="field-input" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);font-size:14px;" />
+        <input id="cp-new" type="password" placeholder="New password" class="field-input" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);font-size:14px;" />
+        <input id="cp-confirm" type="password" placeholder="Confirm new password" class="field-input" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);font-size:14px;" />
+        <button id="cp-btn" class="btn btn-primary" style="align-self:flex-start;" onclick="handleChangePassword()">
+          <i class="ph ph-lock-key"></i> Update Password
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;">KYC Document</h2>
+      </div>
+      <p style="color:var(--text-secondary);font-size:14px;margin-bottom:12px;">
+        Your uploaded document is stored securely. Only compliance officers can view it.
+      </p>
+      <a id="kyc-view" href="#" target="_blank" rel="noopener" class="btn btn-secondary" data-testid="view-kyc-btn">
+        <i class="ph ph-file-magnifying-glass"></i> View Uploaded Document
+      </a>
+    </div>
+  </main>
+
+  <footer class="footer"><div class="container"><p><strong>WinzoIndia</strong> · Play responsibly.</p></div></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const session = window.WinzoAuth.session();
+    if (!session) { window.location.href = "login.html"; }
+    if (session) {
+      const kycLabels = { aadhaar: "Aadhaar Card", pan: "PAN Card", dl: "Driving Licence", passport: "Passport" };
+
+      function renderProfile(u) {
+        document.querySelector("[data-testid='profile-name']").textContent = u.fullName;
+        document.querySelector("[data-testid='profile-email']").textContent = u.email;
+        document.querySelector("[data-testid='info-fullname']").textContent = u.fullName;
+        document.querySelector("[data-testid='info-phone']").textContent = u.phone;
+        document.querySelector("[data-testid='info-email']").textContent = u.email;
+        document.querySelector("[data-testid='info-kyc-type']").textContent = kycLabels[u.kycType] || "—";
+        document.querySelector("[data-testid='info-since']").textContent = new Date(u.createdAt).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" });
+        const badge = document.getElementById("kyc-badge");
+        badge.className = "kyc-badge";
+        if (u.kycVerified) {
+          badge.innerHTML = '<i class="ph-fill ph-check-circle"></i> KYC Verified';
+        } else {
+          badge.classList.add("pending");
+          badge.innerHTML = '<i class="ph-fill ph-clock"></i> KYC Pending';
+        }
+        const kycView = document.getElementById("kyc-view");
+        if (u.kycUrl) kycView.href = u.kycUrl;
+        else kycView.addEventListener("click", (e) => { e.preventDefault(); window.WinzoAuth.toast("No KYC document on file.", "error"); });
+      }
+
+      // Render from cache first, then fetch fresh from Supabase
+      renderProfile(session);
+      if (window.WINZO_SB) {
+        window.WINZO_SB.from("users").select("*").eq("uid", session.uid).single().then(({ data }) => {
+          if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycVerified:data.kyc_verified, createdAt:data.created_at });
+        });
+      }
+    }
+
+    async function handleChangePassword() {
+      const current = document.getElementById("cp-current").value;
+      const newPw   = document.getElementById("cp-new").value;
+      const confirm = document.getElementById("cp-confirm").value;
+      if (!current || !newPw || !confirm) return window.WinzoAuth.toast("Fill all password fields.", "error");
+      if (newPw.length < 6) return window.WinzoAuth.toast("New password must be at least 6 characters.", "error");
+      if (newPw !== confirm) return window.WinzoAuth.toast("Passwords do not match.", "error");
+
+      const btn = document.getElementById("cp-btn");
+      btn.disabled = true; btn.textContent = "Updating…";
+
+      try {
+        // Supabase Auth path
+        if (window.WINZO_SB) {
+          // Re-authenticate by signing in first to verify current password
+          const { error: signInErr } = await window.WINZO_SB.auth.signInWithPassword({ email: session.email, password: current });
+          if (signInErr) throw new Error("Current password is incorrect.");
+          const { error } = await window.WINZO_SB.auth.updateUser({ password: newPw });
+          if (error) throw new Error(error.message);
+        } else {
+          // localStorage fallback
+          const users = window.WinzoAuth.getUsers();
+          const u = users.find(x => x.uid === session.uid);
+          if (!u || u.password !== current) throw new Error("Current password is incorrect.");
+          u.password = newPw;
+          window.WinzoAuth.saveUsers(users);
+        }
+        window.WinzoAuth.toast("Password updated successfully!", "success");
+        document.getElementById("cp-current").value = "";
+        document.getElementById("cp-new").value = "";
+        document.getElementById("cp-confirm").value = "";
+      } catch(e) {
+        window.WinzoAuth.toast(e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph ph-lock-key"></i> Update Password';
+      }
+    }
+  </script>
+</body>
+</html>
