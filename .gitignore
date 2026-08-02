@@ -1,0 +1,9 @@
+# Environment
+.env
+frontend/public/js/env.js
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
