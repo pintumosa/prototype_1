@@ -1,2 +1,1 @@
 # WinzoIndia
-# pinzo-deploy
