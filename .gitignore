@@ -7,3 +7,6 @@ frontend/public/js/env.js
 
 # OS
 .DS_Store
+._*
+._.git
+._.gitignore
