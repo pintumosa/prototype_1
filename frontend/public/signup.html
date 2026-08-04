@@ -131,7 +131,9 @@
     // Submit via button onclick to avoid form submit event issues on GitHub Pages
     async function doSignup() {
       var errBox = document.getElementById("signup-error");
-      errBox.style.display = "none";
+      errBox.textContent = "Processing...";
+      errBox.style.display = "block";
+      errBox.style.color = "orange";
 
       var fullName     = document.getElementById("fullName").value.trim();
       var phone        = document.getElementById("phone").value.trim();
