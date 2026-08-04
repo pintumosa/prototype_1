@@ -99,7 +99,7 @@
         </div>
         <input type="hidden" id="kycType" name="kycType" value="aadhaar" />
 
-        <button type="submit" class="btn btn-primary btn-block btn-lg" data-testid="signup-submit-btn" onclick="console.log('btn clicked'); document.getElementById('signup-error').textContent='Button clicked - processing...'; document.getElementById('signup-error').style.display='block';">
+        <button type="button" id="signup-btn" class="btn btn-primary btn-block btn-lg" data-testid="signup-submit-btn" onclick="doSignup()">
           <i class="ph-fill ph-rocket-launch"></i> Create Account
         </button>
 
@@ -115,90 +115,60 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    window.onerror = function(msg, src, line) {
-      var e = document.getElementById("signup-error");
-      if (e) { e.textContent = "JS Error: " + msg + " (line " + line + ")"; e.style.display = "block"; }
-    };
     window.WinzoAuth.redirectIfAuthed();
 
-    const form = document.getElementById("signup-form");
-    const errBox = document.getElementById("signup-error");
-    const drop = document.getElementById("kyc-drop");
-    const fileInput = document.getElementById("kycFile");
-    const fileInfo = document.getElementById("kyc-file-info");
-    const backDrop = document.getElementById("kyc-back-drop");
-    const backInput = document.getElementById("kycBackFile");
-    const backInfo = document.getElementById("kyc-back-file-info");
-    const panDrop = document.getElementById("pan-drop");
-    const panInput = document.getElementById("panFile");
-    const panInfo = document.getElementById("pan-file-info");
-
-    function setupDrop(dropEl, inputEl, infoEl) {
-      ["dragenter","dragover"].forEach(ev =>
-        dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.add("dragover"); })
-      );
-      ["dragleave","drop"].forEach(ev =>
-        dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.remove("dragover"); })
-      );
-      dropEl.addEventListener("drop", e => {
-        if (e.dataTransfer.files[0]) { inputEl.files = e.dataTransfer.files; showFile(e.dataTransfer.files[0], infoEl); }
-      });
-      inputEl.addEventListener("change", () => { if (inputEl.files[0]) showFile(inputEl.files[0], infoEl); });
-    }
+    // File preview helpers
     function showFile(f, infoEl) {
-      infoEl.textContent = `✓ ${f.name} (${(f.size/(1024*1024)).toFixed(2)} MB) ready to upload`;
+      infoEl.textContent = "✓ " + f.name + " (" + (f.size/1048576).toFixed(2) + " MB)";
     }
-    setupDrop(drop, fileInput, fileInfo);
-    setupDrop(backDrop, backInput, backInfo);
-    setupDrop(panDrop, panInput, panInfo);
-
-    document.getElementById("panNumber").addEventListener("input", function() {
-      this.value = this.value.toUpperCase();
+    ["kycFile","kycBackFile","panFile"].forEach(function(id) {
+      var inp = document.getElementById(id);
+      var info = document.getElementById(id === "kycFile" ? "kyc-file-info" : id === "kycBackFile" ? "kyc-back-file-info" : "pan-file-info");
+      inp.addEventListener("change", function() { if (inp.files[0]) showFile(inp.files[0], info); });
     });
+    document.getElementById("panNumber").addEventListener("input", function() { this.value = this.value.toUpperCase(); });
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    // Submit via button onclick to avoid form submit event issues on GitHub Pages
+    async function doSignup() {
+      var errBox = document.getElementById("signup-error");
       errBox.style.display = "none";
-      const file = fileInput.files[0];
-      const backFile = backInput.files[0];
-      const panFile = panInput.files[0];
-      const aadhaarNumber = document.getElementById("aadhaarNumber").value.trim();
-      const panNumber = document.getElementById("panNumber").value.trim().toUpperCase();
 
-      if (!/^\d{12}$/.test(aadhaarNumber)) { errBox.textContent = "Enter a valid 12-digit Aadhaar number."; errBox.style.display = "block"; return; }
-      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNumber)) { errBox.textContent = "Enter a valid PAN number (e.g. ABCDE1234F)."; errBox.style.display = "block"; return; }
-      if (!file) { errBox.textContent = "Please upload Aadhaar front."; errBox.style.display = "block"; return; }
-      if (!backFile) { errBox.textContent = "Please upload Aadhaar back."; errBox.style.display = "block"; return; }
-      if (!panFile) { errBox.textContent = "Please upload PAN card image."; errBox.style.display = "block"; return; }
-      if (file.size > 5*1024*1024 || backFile.size > 5*1024*1024 || panFile.size > 5*1024*1024) {
-        errBox.textContent = "Each file must be under 5 MB."; errBox.style.display = "block"; return;
-      }
+      var fullName     = document.getElementById("fullName").value.trim();
+      var phone        = document.getElementById("phone").value.trim();
+      var email        = document.getElementById("email").value.trim();
+      var password     = document.getElementById("password").value;
+      var aadhaarNumber= document.getElementById("aadhaarNumber").value.trim();
+      var panNumber    = document.getElementById("panNumber").value.trim().toUpperCase();
+      var file         = document.getElementById("kycFile").files[0];
+      var backFile     = document.getElementById("kycBackFile").files[0];
+      var panFile      = document.getElementById("panFile").files[0];
 
-      const btn = form.querySelector('button[type="submit"]');
+      function err(msg) { errBox.textContent = msg; errBox.style.display = "block"; }
+
+      if (!fullName)                              return err("Enter your full name.");
+      if (!phone)                                 return err("Enter your phone number.");
+      if (!email)                                 return err("Enter your email.");
+      if (!password || password.length < 6)       return err("Password must be at least 6 characters.");
+      if (!/^\d{12}$/.test(aadhaarNumber))        return err("Enter a valid 12-digit Aadhaar number.");
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panNumber)) return err("Enter a valid PAN number (e.g. ABCDE1234F).");
+      if (!file)                                  return err("Please upload Aadhaar front.");
+      if (!backFile)                              return err("Please upload Aadhaar back.");
+      if (!panFile)                               return err("Please upload PAN card image.");
+
+      var btn = document.getElementById("signup-btn");
       btn.disabled = true;
       btn.innerHTML = '<i class="ph ph-spinner"></i> Creating account…';
+
       try {
-        await window.WinzoAuth.signup({
-          fullName: form.fullName.value.trim(),
-          phone: form.phone.value.trim(),
-          email: form.email.value.trim(),
-          password: form.password.value,
-          kycType: "aadhaar",
-          aadhaarNumber,
-          panNumber,
-          kycFile: file,
-          kycBackFile: backFile,
-          panFile
-        });
+        await window.WinzoAuth.signup({ fullName, phone, email, password, kycType:"aadhaar", aadhaarNumber, panNumber, kycFile:file, kycBackFile:backFile, panFile });
         window.WinzoAuth.toast("Account created! Welcome ₹500 bonus added.", "success");
-        setTimeout(() => window.location.href = "dashboard.html", 700);
-      } catch (err) {
-        errBox.textContent = err.message;
-        errBox.style.display = "block";
+        setTimeout(function() { window.location.href = "dashboard.html"; }, 700);
+      } catch(e) {
+        err(e.message);
         btn.disabled = false;
         btn.innerHTML = '<i class="ph-fill ph-rocket-launch"></i> Create Account';
       }
-    });
+    }
   </script>
 </body>
 </html>
