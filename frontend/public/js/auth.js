@@ -90,20 +90,14 @@ async function compressImage(file, maxWidthPx, qualityVal) {
 async function wzUploadKycFile(file, uid, token) {
   if (window.WINZO_SB && token) {
     try {
-      const fnUrl = window.WINZO_ENV?.SUPABASE_URL + "/functions/v1/kyc-upload";
-      // 1. Get presigned URL from Edge Function
-      const res = await fetch(fnUrl, {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, contentType: file.type })
-      });
-      if (res.ok) {
-        const { uploadUrl, publicUrl, kycKey } = await res.json();
-        // 2. Upload directly to Storj
-        await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-        return { kycUrl: publicUrl, kycKey };
+      const path = `kyc/${uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error } = await window.WINZO_SB.storage.from("kyc-docs").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data: urlData } = window.WINZO_SB.storage.from("kyc-docs").getPublicUrl(path);
+        return { kycUrl: urlData.publicUrl, kycKey: path };
       }
-    } catch (e) { console.warn("Storj upload failed:", e.message); }
+      console.warn("Supabase storage upload failed:", error.message);
+    } catch (e) { console.warn("KYC upload error:", e.message); }
   }
   // Fallback: base64
   const dataUrl = await new Promise((resolve, reject) => {
