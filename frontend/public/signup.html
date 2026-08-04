@@ -115,6 +115,10 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
+    window.onerror = function(msg, src, line) {
+      var e = document.getElementById("signup-error");
+      if (e) { e.textContent = "JS Error: " + msg + " (line " + line + ")"; e.style.display = "block"; }
+    };
     window.WinzoAuth.redirectIfAuthed();
 
     const form = document.getElementById("signup-form");

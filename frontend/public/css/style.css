@@ -1471,7 +1471,8 @@ html { scroll-behavior: smooth; }
 
 /* Inputs & buttons — larger tap targets on mobile */
 @media (max-width: 768px) {
-  input, select, textarea {
+  input:not([type=file]):not([type=radio]):not([type=checkbox]),
+  select, textarea {
     font-size: 16px !important; /* prevents iOS zoom on focus */
     min-height: 48px;
   }
