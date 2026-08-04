@@ -366,6 +366,18 @@ window.adminSaveSettings = function () {
   showToast("Settings saved!", "success");
 };
 
+window.adminSaveQR = function () {
+  var file = document.getElementById("set-qr-file").files[0];
+  if (!file) return showToast("Please select an image file.", "error");
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    if (window.WinzoSettings) window.WinzoSettings.save({ qrImage: e.target.result });
+    showToast("QR image saved!", "success");
+    window.loadPanel("settings", "Settings");
+  };
+  reader.readAsDataURL(file);
+};
+
 window.adminManualDeposit = function () {
   var uid = document.getElementById("md-user").value;
   var amt = Number(document.getElementById("md-amount").value);

@@ -297,6 +297,9 @@ PANELS["manual-withdraw-admin"] = function() {
 // ── Settings ──────────────────────────────────────────────────
 PANELS["settings"] = function() {
   const s = window.WinzoSettings ? window.WinzoSettings.get() : {};
+  const qrPreview = s.qrImage
+    ? '<div style="text-align:center;margin-bottom:16px;"><img src="' + s.qrImage + '" alt="Current QR" style="width:160px;height:160px;border-radius:8px;object-fit:contain;border:2px solid var(--accent);" /></div>'
+    : '<p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;">No QR image set yet.</p>';
   return `<div class="a2-panel-head"><h2><i class="ph ph-sliders"></i> Settings</h2></div>
 <div class="a2-form-card"><div class="form">
   <div class="field"><label>Bonus Contact Phone</label><input id="set-bonus-phone" type="text" value="${s.bonusPhone||'+91 99999 99999'}" placeholder="+91 XXXXX XXXXX" /></div>
@@ -305,5 +308,11 @@ PANELS["settings"] = function() {
   <div class="field"><label>UPI ID</label><input id="set-upi-id" type="text" value="${s.upiId||'winzoindia@upi'}" placeholder="yourname@upi" /></div>
   <div class="field"><label>UPI Display Name</label><input id="set-upi-name" type="text" value="${s.upiName||'WinzoIndia'}" placeholder="Display name" /></div>
   <button class="btn btn-primary" onclick="adminSaveSettings()"><i class="ph-fill ph-floppy-disk"></i> Save Settings</button>
+</div></div>
+<div class="a2-form-card" style="margin-top:24px;"><div class="form">
+  <h3 style="margin:0 0 16px;font-size:1rem;"><i class="ph-fill ph-qr-code"></i> QR Code</h3>
+  ${qrPreview}
+  <div class="field"><label>Upload New QR Image</label><input type="file" id="set-qr-file" accept="image/*" style="width:100%;" /></div>
+  <button class="btn btn-primary" onclick="adminSaveQR()"><i class="ph-fill ph-floppy-disk"></i> Save QR Image</button>
 </div></div>`;
 };

@@ -301,9 +301,10 @@ function wzGetSettings() {
       adminUser:  s.adminUser  || "admin",
       adminPass:  s.adminPass  || "winzo-admin-2026",
       upiId:      s.upiId      || "winzoindia@upi",
-      upiName:    s.upiName    || "WinzoIndia"
+      upiName:    s.upiName    || "WinzoIndia",
+      qrImage:    s.qrImage    || ""
     };
-  } catch { return { bonusPhone: "+91 95186-85134", adminUser: "admin", adminPass: "winzo-admin-2026", upiId: "winzoindia@upi", upiName: "WinzoIndia" }; }
+  } catch { return { bonusPhone: "+91 95186-85134", adminUser: "admin", adminPass: "winzo-admin-2026", upiId: "winzoindia@upi", upiName: "WinzoIndia", qrImage: "" }; }
 }
 async function wzLoadSettingsFromSupabase() {
   if (!window.WINZO_SB) return;
