@@ -302,10 +302,10 @@ PANELS["settings"] = function() {
     : '<p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;">No QR image set yet.</p>';
   return `<div class="a2-panel-head"><h2><i class="ph ph-sliders"></i> Settings</h2></div>
 <div class="a2-form-card"><div class="form">
-  <div class="field"><label>Bonus Contact Phone</label><input id="set-bonus-phone" type="text" value="${s.bonusPhone||'+91 99999 99999'}" placeholder="+91 XXXXX XXXXX" /></div>
+  <div class="field"><label>Pay To — Phone Number</label><input id="set-bonus-phone" type="text" value="${s.bonusPhone||'+91 99999 99999'}" placeholder="+91 XXXXX XXXXX" /></div>
   <div class="field"><label>Admin Username</label><input id="set-admin-user" type="text" value="${s.adminUser||'admin'}" placeholder="admin username" /></div>
   <div class="field"><label>Admin Password</label><input id="set-admin-pass" type="text" value="${s.adminPass||'winzo-admin-2026'}" placeholder="New password" /></div>
-  <div class="field"><label>UPI ID</label><input id="set-upi-id" type="text" value="${s.upiId||'winzoindia@upi'}" placeholder="yourname@upi" /></div>
+  <div class="field"><label>Pay To — UPI ID</label><input id="set-upi-id" type="text" value="${s.upiId||'winzoindia@upi'}" placeholder="yourname@upi" /></div>
   <div class="field"><label>UPI Display Name</label><input id="set-upi-name" type="text" value="${s.upiName||'WinzoIndia'}" placeholder="Display name" /></div>
   <button class="btn btn-primary" onclick="adminSaveSettings()"><i class="ph-fill ph-floppy-disk"></i> Save Settings</button>
 </div></div>
