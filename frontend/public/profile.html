@@ -72,6 +72,15 @@
       </div>
     </div>
 
+    <div class="card" style="margin-bottom:24px;">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;"><i class="ph-fill ph-sword" style="color:var(--accent);"></i> Match History</h2>
+      </div>
+      <div id="match-history-list">
+        <p style="color:var(--text-muted);font-size:14px;text-align:center;padding:16px;">Loading…</p>
+      </div>
+    </div>
+
     <div class="card">
       <div class="section-title" style="margin-bottom:16px;">
         <h2 style="font-size:1.2rem;">KYC Document</h2>
@@ -172,6 +181,52 @@
           if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycVerified:data.kyc_verified, kycRejected:data.kyc_rejected, createdAt:data.created_at });
         });
       }
+
+      // Match History
+      async function loadMatchHistory() {
+        const el = document.getElementById("match-history-list");
+        const GAME_LABELS = { ludo: "Ludo", "snake-ladder": "Snake & Ladder" };
+        let matches = [];
+        if (window.WINZO_SB) {
+          const { data } = await window.WINZO_SB.from("challenges")
+            .select("*")
+            .or(`uid.eq.${session.uid},accepted_by.eq.${session.uid}`)
+            .not("accepted_by", "is", null)
+            .order("accepted_at", { ascending: false });
+          if (data) matches = data;
+        } else {
+          const all = JSON.parse(localStorage.getItem("winzo_sets_global") || "[]");
+          matches = all.filter(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid))
+                       .sort((a, b) => new Date(b.acceptedAt) - new Date(a.acceptedAt));
+        }
+        if (!matches.length) {
+          el.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:16px;">No matches played yet.</p>`;
+          return;
+        }
+        el.innerHTML = matches.map(m => {
+          const isSupabase = !!m.accepted_by;
+          const opponentName = isSupabase
+            ? (m.uid === session.uid ? m.accepted_by_name : m.by_name)
+            : (m.uid === session.uid ? m.acceptedByName : m.byName);
+          const gameType = isSupabase ? m.game_type : m.gameType;
+          const amount = isSupabase ? m.value : m.value;
+          const acceptedAt = isSupabase ? m.accepted_at : m.acceptedAt;
+          const gameId = isSupabase ? (m.game_id || m.id) : (m.gameId || m.id);
+          const label = GAME_LABELS[gameType] || gameType;
+          const date = acceptedAt ? new Date(acceptedAt).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" }) : "—";
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-subtle);flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="font-weight:600;font-size:14px;">${label} · <span style="color:var(--accent);">₹${Number(amount).toLocaleString("en-IN")}</span></div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">vs <strong style="color:var(--text-secondary);">${opponentName || "—"}</strong> · ${date}</div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);text-align:right;">
+              <div>Game ID</div>
+              <div style="font-weight:700;color:var(--accent);letter-spacing:1px;">${gameId}</div>
+            </div>
+          </div>`;
+        }).join("") + `<p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:12px;">${matches.length} match${matches.length !== 1 ? "es" : ""} found</p>`;
+      }
+      loadMatchHistory();
 
       // Re-upload form logic
       const NEEDS_BACK = ["aadhaar", "dl"];
