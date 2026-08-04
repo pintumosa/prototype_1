@@ -1460,3 +1460,93 @@ body { padding-bottom: 72px; }
 
 /* Prevent horizontal overflow on body */
 html, body { overflow-x: hidden; max-width: 100vw; }
+
+/* ==========================================================
+   Professional Mobile Optimizations
+   ========================================================== */
+
+/* Smooth scrolling & tap highlight */
+* { -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+
+/* Inputs & buttons — larger tap targets on mobile */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important; /* prevents iOS zoom on focus */
+    min-height: 48px;
+  }
+  .btn { min-height: 48px; border-radius: 10px; }
+  .btn-block { font-size: 15px; padding: 15px 20px; }
+
+  /* Modal — full bottom sheet on mobile */
+  .modal { padding: 0; align-items: flex-end; }
+  .modal-panel {
+    max-width: 100%;
+    width: 100%;
+    max-height: 94vh;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px 32px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Drag handle indicator */
+  .modal-panel::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+
+  /* UPI modal pay-to section — stack on small screens */
+  #upi-id-row, #upi-phone-row { flex-wrap: wrap; }
+
+  /* Wallet card — stack vertically */
+  .wallet-card { flex-direction: column; align-items: flex-start; gap: 16px; padding: 20px; }
+  .wallet-balance { font-size: 2.4rem; }
+  .wallet-actions { width: 100%; }
+  .wallet-actions .btn { flex: 1; justify-content: center; }
+
+  /* Set-a-game bar */
+  .setbar-row { gap: 8px; }
+  select.field-input, .setbar select { min-height: 48px; }
+
+  /* Set rows — cleaner card layout */
+  .set-row { border-radius: 12px; }
+
+  /* Match room card — full width flex items */
+  #match-room-card > div { flex-wrap: wrap; gap: 10px; }
+
+  /* Profile shell */
+  .profile-shell { padding: 16px; gap: 16px; }
+  .card { padding: 18px 16px; }
+
+  /* Section spacing */
+  .games-section { padding: 24px 0; }
+  .section { padding: 32px 16px; }
+
+  /* Toast — above bottom nav */
+  .toast { bottom: 72px; }
+
+  /* QR image — larger on mobile for easier scanning */
+  #upi-qr-img { width: 240px !important; height: 240px !important; }
+
+  /* Pay method options — equal width */
+  .pay-method-opt { flex: 1; min-width: 80px; }
+  .pay-method-opt span { justify-content: center; text-align: center; padding: 10px 8px; }
+}
+
+/* Landscape phone — reduce vertical padding */
+@media (max-width: 768px) and (orientation: landscape) {
+  .modal-panel { max-height: 98vh; }
+  .hero { padding: 32px 16px; }
+}
+
+/* Touch-friendly active states */
+@media (hover: none) {
+  .btn:active { opacity: 0.75; transform: scale(0.97); }
+  .game-card:active { transform: scale(0.98); }
+  .set-row:active { background: rgba(255,255,255,0.06); }
+}

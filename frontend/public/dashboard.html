@@ -45,7 +45,7 @@
         Bonus add karwane ke lie contact kare
         <a id="bonus-phone-link" href="#" class="bonus-phone" data-testid="bonus-phone" target="_blank" rel="noopener">+91 95186-85134</a>
       </p>
-      <button class="btn btn-primary" id="open-upi" data-testid="open-upi-btn" style="margin-top:14px;" onclick="var _s=(window.WinzoSettings?window.WinzoSettings.get():{});var _bp=_s.bonusPhone||'+91 95186-85134';document.getElementById('upi-modal').removeAttribute('hidden');document.getElementById('upi-phone-display').textContent=_bp;document.getElementById('upi-wa-link').href='https://wa.me/'+_bp.replace(/[^0-9]/g,'');var _uid=_s.upiId||'';var _uidEl=document.getElementById('upi-id-display');_uidEl.textContent=_uid?'UPI: '+_uid:'';var _qr=_s.qrImage||'';var _qrWrap=document.getElementById('upi-qr-wrap');var _qrImg=document.getElementById('upi-qr-img');if(_qr){_qrImg.src=_qr;_qrWrap.style.display='block';}else{_qrWrap.style.display='none';}">
+      <button class="btn btn-primary" id="open-upi" data-testid="open-upi-btn" style="margin-top:14px;" onclick="var _s=(window.WinzoSettings?window.WinzoSettings.get():{});var _bp=_s.bonusPhone||'+91 95186-85134';document.getElementById('upi-modal').removeAttribute('hidden');document.getElementById('upi-phone-display').textContent=_bp;document.getElementById('upi-wa-link').href='https://wa.me/'+_bp.replace(/[^0-9]/g,'');var _uid=_s.upiId||'';var _uidEl=document.getElementById('upi-id-display');var _uidRow=document.getElementById('upi-id-row');_uidEl.textContent=_uid;_uidRow.style.display=_uid?'flex':'none';var _qr=_s.qrImage||'';var _qrWrap=document.getElementById('upi-qr-wrap');var _qrImg=document.getElementById('upi-qr-img');if(_qr){_qrImg.src=_qr;_qrWrap.style.display='block';}else{_qrWrap.style.display='none';}">
         <i class="ph-fill ph-qr-code"></i> Pay via UPI &amp; Add Chips
       </button>
         <i class="ph-fill ph-qr-code"></i> Pay via UPI &amp; Add Chips
@@ -69,19 +69,32 @@
       </div>
 
       <!-- Phone number / UPI ID -->
-      <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;">
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Pay to this number / UPI ID</div>
-          <div id="upi-phone-display" style="font-size:1.1rem;font-weight:700;color:var(--accent);letter-spacing:1px;">+91 95186-85134</div>
-          <div id="upi-id-display" style="font-size:13px;color:var(--text-secondary);margin-top:2px;"></div>
+      <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px 16px;margin-bottom:4px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Pay to</div>
+        <!-- Phone row -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);">Phone Number</div>
+            <div id="upi-phone-display" style="font-size:1rem;font-weight:700;color:var(--accent);letter-spacing:1px;">+91 95186-85134</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button onclick="navigator.clipboard.writeText(document.getElementById('upi-phone-display').textContent).then(()=>window.WinzoAuth.toast('Number copied!','success'))" class="btn btn-secondary" style="padding:7px 12px;font-size:12px;">
+              <i class="ph ph-copy"></i> Copy
+            </button>
+            <a id="upi-wa-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:7px 12px;font-size:12px;color:#25d366;border-color:#25d366;">
+              <i class="ph-fill ph-whatsapp-logo"></i>
+            </a>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="navigator.clipboard.writeText(document.getElementById('upi-phone-display').textContent).then(()=>window.WinzoAuth.toast('Number copied!','success'))" class="btn btn-secondary" style="padding:8px 14px;font-size:12px;white-space:nowrap;">
+        <!-- UPI ID row -->
+        <div id="upi-id-row" style="display:none;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);">UPI ID</div>
+            <div id="upi-id-display" style="font-size:1rem;font-weight:700;color:var(--accent);"></div>
+          </div>
+          <button onclick="navigator.clipboard.writeText(document.getElementById('upi-id-display').textContent).then(()=>window.WinzoAuth.toast('UPI ID copied!','success'))" class="btn btn-secondary" style="padding:7px 12px;font-size:12px;flex-shrink:0;">
             <i class="ph ph-copy"></i> Copy
           </button>
-          <a id="upi-wa-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:8px 14px;font-size:12px;white-space:nowrap;color:#25d366;border-color:#25d366;">
-            <i class="ph-fill ph-whatsapp-logo"></i> WhatsApp
-          </a>
         </div>
       </div>
 
