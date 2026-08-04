@@ -123,10 +123,23 @@ async function wzSignup(payload) {
     const { data: existing } = await window.WINZO_SB.from("users")
       .select("uid").or(`email.eq.${payload.email},phone.eq.${payload.phone}`).limit(1);
     if (existing && existing.length) throw new Error("An account with this email or phone already exists.");
+
+    // Aadhaar / PAN duplicate check
+    const orParts = [];
+    if (payload.aadhaarNumber) orParts.push(`aadhaar_number.eq.${payload.aadhaarNumber}`);
+    if (payload.panNumber)     orParts.push(`pan_number.eq.${payload.panNumber}`);
+    if (orParts.length) {
+      const { data: docDup } = await window.WINZO_SB.from("users").select("uid").or(orParts.join(",")).limit(1);
+      if (docDup && docDup.length) throw new Error("An account with this Aadhaar or PAN number already exists.");
+    }
   } else {
     const users = wzGetUsers();
     if (users.find(u => u.email === payload.email || u.phone === payload.phone))
       throw new Error("An account with this email or phone already exists.");
+    if (payload.aadhaarNumber && users.find(u => u.aadhaarNumber === payload.aadhaarNumber))
+      throw new Error("An account with this Aadhaar number already exists.");
+    if (payload.panNumber && users.find(u => u.panNumber === payload.panNumber))
+      throw new Error("An account with this PAN number already exists.");
   }
 
   let uid = "u_" + Date.now();
