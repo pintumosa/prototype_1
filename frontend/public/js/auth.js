@@ -242,6 +242,7 @@ async function wzLogin(identifier, password) {
       }
       // Sync fresh user data from Supabase DB (query by uid so RLS passes)
       const { data: dbUser } = await window.WINZO_SB.from("users").select("*").eq("uid", data.user.id).single();
+      if (dbUser && dbUser.blocked) throw new Error("Your account has been blocked. Please contact support.");
       const merged = dbUser ? {
         uid: dbUser.uid, fullName: dbUser.full_name, phone: dbUser.phone,
         email: dbUser.email, kycType: dbUser.kyc_type, kycUrl: dbUser.kyc_url,
@@ -273,6 +274,7 @@ async function wzLogin(identifier, password) {
     u => (u.email === identifier || u.phone === identifier) && u.password === password
   );
   if (!user) throw new Error("Invalid credentials. Please try again.");
+  if (user.blocked) throw new Error("Your account has been blocked. Please contact support.");
   wzSetSession({ ...user, password: undefined });
   return user;
 }

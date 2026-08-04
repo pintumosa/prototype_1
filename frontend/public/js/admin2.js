@@ -177,6 +177,19 @@ window.adminDeleteUser = function (uid) {
   window.loadPanel("view-all-users", "View All Users");
 };
 
+window.adminBlockUser = async function (uid, block) {
+  var users = getLiveUsers();
+  var u = users.find(function(x){ return x.uid === uid; });
+  if (!u) return;
+  u.blocked = block;
+  saveLiveUsers(users);
+  if (window.WINZO_SB) {
+    try { await window.WINZO_SB.from("users").update({ blocked: block }).eq("uid", uid); } catch(e) {}
+  }
+  showToast(block ? "User blocked." : "User unblocked.", block ? "error" : "success");
+  window.loadPanel("view-all-users", "View All Users");
+};
+
 window.adminViewUserProfile = function (uid) {
   window._adminProfileUid = uid;
   var u = getLiveUsers().find(function(x){ return x.uid === uid; });
