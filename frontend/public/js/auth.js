@@ -143,6 +143,17 @@ async function wzSignup(payload) {
       if (error) throw new Error(error.message);
       if (data?.user?.id) uid = data.user.id;
       sbToken = data?.session?.access_token || null;
+
+      // If email confirmation is ON, session is null — sign in immediately to get a token
+      if (!sbToken) {
+        const { data: signInData, error: signInErr } = await window.WINZO_SB.auth.signInWithPassword({
+          email: payload.email, password: payload.password
+        });
+        if (!signInErr && signInData?.session) {
+          sbToken = signInData.session.access_token;
+          if (signInData.user?.id) uid = signInData.user.id;
+        }
+      }
     } catch (e) {
       throw new Error(e.message);
     }
