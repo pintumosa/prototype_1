@@ -99,7 +99,7 @@
         </div>
         <input type="hidden" id="kycType" name="kycType" value="aadhaar" />
 
-        <button type="submit" class="btn btn-primary btn-block btn-lg" data-testid="signup-submit-btn">
+        <button type="submit" class="btn btn-primary btn-block btn-lg" data-testid="signup-submit-btn" onclick="console.log('btn clicked'); document.getElementById('signup-error').textContent='Button clicked - processing...'; document.getElementById('signup-error').style.display='block';">
           <i class="ph-fill ph-rocket-launch"></i> Create Account
         </button>
 
