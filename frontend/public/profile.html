@@ -15,7 +15,7 @@
   <nav class="nav">
     <div class="nav-inner">
       <a href="index.html" class="brand"><div class="brand-mark">W</div><div class="brand-name">Winzo<span>India</span></div></a>
-      <ul class="nav-links">
+      <ul class="nav-links" id="nav-links">
         <li><a href="dashboard.html">Lobby</a></li>
         <li><a href="ludo.html">Ludo</a></li>
         <li><a href="snake-ladder.html">Snake &amp; Ladder</a></li>
@@ -26,6 +26,7 @@
         <a href="dashboard.html" class="btn btn-secondary"><i class="ph ph-house"></i> Dashboard</a>
         <a href="#" id="logout-btn" class="btn btn-primary" data-testid="profile-logout-btn">Logout</a>
       </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </nav>
 
@@ -81,6 +82,47 @@
       <a id="kyc-view" href="#" target="_blank" rel="noopener" class="btn btn-secondary" data-testid="view-kyc-btn">
         <i class="ph ph-file-magnifying-glass"></i> View Uploaded Document
       </a>
+
+      <!-- Shown only when KYC is rejected -->
+      <div id="kyc-rejected-section" style="display:none;margin-top:16px;">
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;margin-bottom:16px;">
+          <p style="color:#ef4444;font-weight:600;margin:0 0 4px;"><i class="ph-fill ph-x-circle"></i> KYC Rejected</p>
+          <p style="color:var(--text-secondary);font-size:13px;margin:0;">Your documents were rejected. Please re-upload valid documents.</p>
+        </div>
+        <form id="rekyc-form">
+          <div class="field" style="margin-bottom:12px;">
+            <label for="rekyc-type">Document Type</label>
+            <select id="rekyc-type" required style="width:100%;">
+              <option value="">Choose a document…</option>
+              <option value="aadhaar">Aadhaar Card</option>
+              <option value="pan">PAN Card</option>
+              <option value="dl">Driving Licence</option>
+              <option value="passport">Passport</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:12px;">
+            <label>Front Side</label>
+            <label class="file-drop" for="rekyc-front" style="cursor:pointer;display:block;border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;">
+              <i class="ph ph-upload-simple" style="font-size:24px;"></i>
+              <p style="margin:4px 0 0;font-size:13px;"><strong>Click to upload front</strong></p>
+              <input id="rekyc-front" type="file" accept=".jpg,.jpeg,.png,.pdf" required style="display:none;" />
+            </label>
+            <div id="rekyc-front-info" style="font-size:12px;color:var(--success);margin-top:4px;"></div>
+          </div>
+          <div class="field" id="rekyc-back-field" style="display:none;margin-bottom:12px;">
+            <label>Back Side</label>
+            <label class="file-drop" for="rekyc-back" style="cursor:pointer;display:block;border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;">
+              <i class="ph ph-upload-simple" style="font-size:24px;"></i>
+              <p style="margin:4px 0 0;font-size:13px;"><strong>Click to upload back</strong></p>
+              <input id="rekyc-back" type="file" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" />
+            </label>
+            <div id="rekyc-back-info" style="font-size:12px;color:var(--success);margin-top:4px;"></div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">
+            <i class="ph ph-paper-plane-tilt"></i> Re-submit Documents
+          </button>
+        </form>
+      </div>
     </div>
   </main>
 
@@ -109,6 +151,11 @@
         badge.className = "kyc-badge";
         if (u.kycVerified) {
           badge.innerHTML = '<i class="ph-fill ph-check-circle"></i> KYC Verified';
+        } else if (u.kycRejected) {
+          badge.classList.add("rejected");
+          badge.innerHTML = '<i class="ph-fill ph-x-circle"></i> KYC Rejected';
+          document.getElementById("kyc-rejected-section").style.display = "block";
+          document.getElementById("kyc-view").style.display = "none";
         } else {
           badge.classList.add("pending");
           badge.innerHTML = '<i class="ph-fill ph-clock"></i> KYC Pending';
@@ -122,9 +169,96 @@
       renderProfile(session);
       if (window.WINZO_SB) {
         window.WINZO_SB.from("users").select("*").eq("uid", session.uid).single().then(({ data }) => {
-          if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycVerified:data.kyc_verified, createdAt:data.created_at });
+          if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycVerified:data.kyc_verified, kycRejected:data.kyc_rejected, createdAt:data.created_at });
         });
       }
+
+      // Re-upload form logic
+      const NEEDS_BACK = ["aadhaar", "dl"];
+      document.getElementById("rekyc-type").addEventListener("change", function() {
+        document.getElementById("rekyc-back-field").style.display = NEEDS_BACK.includes(this.value) ? "block" : "none";
+      });
+      document.getElementById("rekyc-front").addEventListener("change", function() {
+        document.getElementById("rekyc-front-info").textContent = this.files[0] ? "✓ " + this.files[0].name : "";
+      });
+      document.getElementById("rekyc-back").addEventListener("change", function() {
+        document.getElementById("rekyc-back-info").textContent = this.files[0] ? "✓ " + this.files[0].name : "";
+      });
+
+      document.getElementById("rekyc-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const kycType = document.getElementById("rekyc-type").value;
+        const frontFile = document.getElementById("rekyc-front").files[0];
+        const backFile  = document.getElementById("rekyc-back").files[0];
+        if (!kycType) return window.WinzoAuth.toast("Select a document type.", "error");
+        if (!frontFile) return window.WinzoAuth.toast("Upload the front side.", "error");
+        if (NEEDS_BACK.includes(kycType) && !backFile) return window.WinzoAuth.toast("Upload the back side.", "error");
+
+        const btn = this.querySelector("button[type=submit]");
+        btn.disabled = true; btn.textContent = "Uploading…";
+
+        async function compress(file) {
+          if (!file || file.type === "application/pdf") return file;
+          return new Promise(function(resolve) {
+            const img = new Image(), url = URL.createObjectURL(file);
+            img.onload = function() {
+              URL.revokeObjectURL(url);
+              const scale = Math.min(1, 1600 / img.width);
+              const c = document.createElement("canvas");
+              c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+              c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+              c.toBlob(function(b) { resolve(b ? new File([b], file.name, {type:"image/jpeg"}) : file); }, "image/jpeg", 0.82);
+            };
+            img.onerror = function() { resolve(file); };
+            img.src = url;
+          });
+        }
+
+        try {
+          let kycUrl = null, kycBackUrl = null, kycKey = null, kycBackKey = null;
+          const cFront = await compress(frontFile);
+          const cBack  = backFile ? await compress(backFile) : null;
+
+          if (window.WINZO_SB) {
+            const frontPath = `kyc/${session.uid}/front_${Date.now()}`;
+            const { error: upErr } = await window.WINZO_SB.storage.from("kyc-docs").upload(frontPath, cFront, { upsert: true });
+            if (upErr) throw new Error(upErr.message);
+            kycKey = frontPath;
+
+            if (cBack) {
+              const backPath = `kyc/${session.uid}/back_${Date.now()}`;
+              const { error: upErr2 } = await window.WINZO_SB.storage.from("kyc-docs").upload(backPath, cBack, { upsert: true });
+              if (upErr2) throw new Error(upErr2.message);
+              kycBackKey = backPath;
+            }
+
+            await window.WINZO_SB.from("users").update({
+              kyc_type: kycType, kyc_key: kycKey, kyc_back_key: kycBackKey,
+              kyc_verified: false, kyc_rejected: false
+            }).eq("uid", session.uid);
+          }
+
+          // Update localStorage
+          const users = window.WinzoAuth.getUsers ? window.WinzoAuth.getUsers() : JSON.parse(localStorage.getItem("winzo_users") || "[]");
+          const u = users.find(x => x.uid === session.uid);
+          if (u) { u.kycType = kycType; u.kycKey = kycKey; u.kycBackKey = kycBackKey; u.kycVerified = false; u.kycRejected = false; }
+          localStorage.setItem("winzo_users", JSON.stringify(users));
+          session.kycRejected = false; session.kycVerified = false; session.kycType = kycType;
+          localStorage.setItem("winzo_session", JSON.stringify(session));
+
+          window.WinzoAuth.toast("Documents submitted! Awaiting review.", "success");
+          document.getElementById("kyc-rejected-section").style.display = "none";
+          document.getElementById("kyc-view").style.display = "";
+          const badge = document.getElementById("kyc-badge");
+          badge.className = "kyc-badge pending";
+          badge.innerHTML = '<i class="ph-fill ph-clock"></i> KYC Pending';
+        } catch(err) {
+          window.WinzoAuth.toast(err.message || "Upload failed.", "error");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Re-submit Documents';
+        }
+      });
     }
 
     async function handleChangePassword() {
@@ -165,6 +299,18 @@
         btn.innerHTML = '<i class="ph ph-lock-key"></i> Update Password';
       }
     }
+  </script>
+  <nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="mbn-item"><i class="ph-fill ph-house"></i><span>Lobby</span></a>
+    <a href="ludo.html" class="mbn-item"><i class="ph-fill ph-crown"></i><span>Ludo</span></a>
+    <a href="snake-ladder.html" class="mbn-item"><i class="ph-fill ph-path"></i><span>S&amp;L</span></a>
+    <a href="profile.html" class="mbn-item active"><i class="ph-fill ph-user-circle"></i><span>Profile</span></a>
+  </nav>
+  <script>
+    const hb = document.getElementById('nav-hamburger');
+    const nl = document.getElementById('nav-links');
+    hb.addEventListener('click', () => { hb.classList.toggle('open'); nl.classList.toggle('open'); });
+    nl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { hb.classList.remove('open'); nl.classList.remove('open'); }));
   </script>
 </body>
 </html>

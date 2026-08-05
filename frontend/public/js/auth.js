@@ -66,6 +66,27 @@ function wzToast(msg, type = "info", ms = 3200) {
   node._t = setTimeout(() => node.classList.remove("show"), ms);
 }
 
+async function compressImage(file, maxWidthPx, qualityVal) {
+  if (file.type === "application/pdf") return file; // skip PDFs
+  return new Promise(function(resolve) {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidthPx / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        resolve(blob ? new File([blob], file.name, { type: "image/jpeg" }) : file);
+      }, "image/jpeg", qualityVal);
+    };
+    img.onerror = function() { resolve(file); };
+    img.src = url;
+  });
+}
+
 async function wzUploadKycFile(file, uid, token) {
   if (window.WINZO_SB && token) {
     try {
@@ -128,10 +149,13 @@ async function wzSignup(payload) {
   }
 
   const kycResult = payload.kycFile
-    ? await wzUploadKycFile(payload.kycFile, uid, sbToken)
+    ? await wzUploadKycFile(await compressImage(payload.kycFile, 1600, 0.82), uid, sbToken)
     : { kycUrl: null, kycKey: null };
   const kycBackResult = payload.kycBackFile
-    ? await wzUploadKycFile(payload.kycBackFile, uid, sbToken)
+    ? await wzUploadKycFile(await compressImage(payload.kycBackFile, 1600, 0.82), uid, sbToken)
+    : { kycUrl: null, kycKey: null };
+  const panResult = payload.panFile
+    ? await wzUploadKycFile(await compressImage(payload.panFile, 1600, 0.82), uid, sbToken)
     : { kycUrl: null, kycKey: null };
 
   const user = {
@@ -140,10 +164,14 @@ async function wzSignup(payload) {
     phone: payload.phone,
     email: payload.email,
     kycType: payload.kycType,
+    aadhaarNumber: payload.aadhaarNumber || null,
+    panNumber: payload.panNumber || null,
     kycUrl: kycResult.kycUrl,
     kycKey: kycResult.kycKey,
     kycBackUrl: kycBackResult.kycUrl,
     kycBackKey: kycBackResult.kycKey,
+    panUrl: panResult.kycUrl,
+    panKey: panResult.kycKey,
     kycVerified: false,
     chips: 0,
     wallet: 0,
@@ -156,8 +184,11 @@ async function wzSignup(payload) {
       await window.WINZO_SB.from("users").insert({
         uid, full_name: payload.fullName, phone: payload.phone,
         email: payload.email, kyc_type: payload.kycType,
+        aadhaar_number: payload.aadhaarNumber || null,
+        pan_number: payload.panNumber || null,
         kyc_url: kycResult.kycUrl, kyc_back_url: kycBackResult.kycUrl,
         kyc_back_key: kycBackResult.kycKey,
+        pan_url: panResult.kycUrl, pan_key: panResult.kycKey,
         kyc_verified: false,
         chips: 0, created_at: new Date().toISOString()
       });
@@ -191,8 +222,10 @@ async function wzLogin(identifier, password) {
         uid: dbUser.uid, fullName: dbUser.full_name, phone: dbUser.phone,
         email: dbUser.email, kycType: dbUser.kyc_type, kycUrl: dbUser.kyc_url,
         kycBackUrl: dbUser.kyc_back_url || null, kycBackKey: dbUser.kyc_back_key || null,
-        kycVerified: dbUser.kyc_verified, chips: dbUser.chips || 0,
-        wallet: dbUser.chips || 0, createdAt: dbUser.created_at
+        aadhaarNumber: dbUser.aadhaar_number || null, panNumber: dbUser.pan_number || null,
+        panUrl: dbUser.pan_url || null, panKey: dbUser.pan_key || null,
+        kycVerified: dbUser.kyc_verified, kycRejected: dbUser.kyc_rejected || false,
+        chips: dbUser.chips || 0, wallet: dbUser.chips || 0, createdAt: dbUser.created_at
       } : {
         uid: data.user.id, fullName: data.user.user_metadata?.fullName || identifier,
         phone: data.user.user_metadata?.phone || "", email: data.user.email || identifier,

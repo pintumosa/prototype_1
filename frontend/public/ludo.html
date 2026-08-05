@@ -15,7 +15,7 @@
   <nav class="nav">
     <div class="nav-inner">
       <a href="index.html" class="brand"><div class="brand-mark">W</div><div class="brand-name">Winzo<span>India</span></div></a>
-      <ul class="nav-links">
+      <ul class="nav-links" id="nav-links">
         <li><a href="dashboard.html">Lobby</a></li>
         <li><a href="ludo.html" class="active">Ludo</a></li>
         <li><a href="snake-ladder.html">Snake &amp; Ladder</a></li>
@@ -26,6 +26,7 @@
         <a href="profile.html" class="btn btn-secondary"><i class="ph ph-user-circle"></i> <span data-user-name>Player</span></a>
         <a href="#" id="logout-btn" class="btn btn-primary">Logout</a>
       </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </nav>
 
@@ -78,6 +79,26 @@
       const n = 12000 + Math.floor(Math.random() * 900);
       el.textContent = n.toLocaleString("en-IN");
     }, 3200);
+  </script>
+  <nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="mbn-item">
+      <i class="ph-fill ph-house"></i><span>Lobby</span>
+    </a>
+    <a href="ludo.html" class="mbn-item active">
+      <i class="ph-fill ph-crown"></i><span>Ludo</span>
+    </a>
+    <a href="snake-ladder.html" class="mbn-item">
+      <i class="ph-fill ph-path"></i><span>S&amp;L</span>
+    </a>
+    <a href="profile.html" class="mbn-item">
+      <i class="ph-fill ph-user-circle"></i><span>Profile</span>
+    </a>
+  </nav>
+  <script>
+    const hb = document.getElementById('nav-hamburger');
+    const nl = document.getElementById('nav-links');
+    hb.addEventListener('click', () => { hb.classList.toggle('open'); nl.classList.toggle('open'); });
+    nl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { hb.classList.remove('open'); nl.classList.remove('open'); }));
   </script>
 </body>
 </html>

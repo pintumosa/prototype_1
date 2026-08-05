@@ -2,6 +2,48 @@
 // WinzoIndia Admin v2 — Main Controller
 // ============================================================
 
+// ── Live panel auto-refresh ───────────────────────────────────
+var _liveRefreshTimer = null;
+var _elapsedTimer = null;
+
+function startLiveRefresh(key, label) {
+  stopLiveRefresh();
+  // Refresh data + re-render every 8 seconds
+  _liveRefreshTimer = setInterval(function() {
+    if (document.getElementById("topbar-title").textContent === (label || key)) {
+      getLiveSetsAsync().then(function() {
+        if (document.getElementById("topbar-title").textContent === (label || key)) {
+          document.getElementById("main-content").innerHTML = PANELS[key]();
+          startElapsedTick();
+          var el = document.getElementById("rc-last-refresh");
+          if (el) el.textContent = "Updated " + new Date().toLocaleTimeString("en-IN", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+        }
+      });
+    } else { stopLiveRefresh(); }
+  }, 8000);
+  startElapsedTick();
+}
+
+function startElapsedTick() {
+  if (_elapsedTimer) clearInterval(_elapsedTimer);
+  _elapsedTimer = setInterval(function() {
+    document.querySelectorAll("[id^='elapsed-']").forEach(function(el) {
+      var id = el.id.replace("elapsed-","");
+      var sets = getLiveSets();
+      var s = sets.find(function(x){ return x.id === id; });
+      if (s && s.startedAt) {
+        var sec = Math.floor((Date.now() - new Date(s.startedAt).getTime()) / 1000);
+        el.textContent = Math.floor(sec/60) + "m " + (sec%60) + "s";
+      }
+    });
+  }, 1000);
+}
+
+function stopLiveRefresh() {
+  if (_liveRefreshTimer) { clearInterval(_liveRefreshTimer); _liveRefreshTimer = null; }
+  if (_elapsedTimer) { clearInterval(_elapsedTimer); _elapsedTimer = null; }
+}
+
 // ── Define globals first so unlock() can call them ───────────
 window.loadPanel = function (key, label) {
   document.getElementById("topbar-title").textContent = label || key;
@@ -10,6 +52,12 @@ window.loadPanel = function (key, label) {
     content.innerHTML = PANELS[key]();
   } else {
     content.innerHTML = '<div style="color:var(--text-muted);padding:40px;text-align:center;">Panel not found: ' + key + '</div>';
+  }
+  // Start live refresh only for running-challenges panel
+  if (key === "running-challenges") {
+    startLiveRefresh(key, label || key);
+  } else {
+    stopLiveRefresh();
   }
 };
 
@@ -129,6 +177,12 @@ window.adminDeleteUser = function (uid) {
   window.loadPanel("view-all-users", "View All Users");
 };
 
+window.adminViewUserProfile = function (uid) {
+  window._adminProfileUid = uid;
+  var u = getLiveUsers().find(function(x){ return x.uid === uid; });
+  window.loadPanel("user-profile", "User Profile — " + (u ? (u.fullName||u.name||uid) : uid));
+};
+
 window.adminChipOp = function (uid, direction) {
   var amt = Number(document.getElementById("chipamt-" + uid)?.value);
   if (!amt || amt < 1) return showToast("Enter a valid amount.", "error");
@@ -156,6 +210,55 @@ window.adminChipOp = function (uid, direction) {
   var el = document.getElementById("chips-" + uid);
   if (el) el.textContent = u.chips.toLocaleString("en-IN");
   showToast((direction > 0 ? "Added " : "Subtracted ") + amt + " chips " + (direction > 0 ? "to " : "from ") + (u.fullName || u.name) + ". Balance: " + u.chips, "success");
+};
+
+// ── Declare winner (admin manually credits chips to winner) ──
+window.adminDeclareWinner = async function(resultId, winnerUid, winnerName, prize) {
+  if (!confirm("Declare " + winnerName + " as winner and credit ₹" + prize + " chips?")) return;
+  var users = getLiveUsers();
+  var u = users.find(function(x){ return x.uid === winnerUid; });
+  if (!u) return showToast("User not found.", "error");
+  u.chips = Number(u.chips || 0) + prize;
+  u.wallet = u.chips;
+  saveLiveUsers(users);
+  if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", winnerUid).then(function(){});
+
+  // Mark result as approved
+  var results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
+  results = results.map(function(r){ return r.id === resultId ? Object.assign({}, r, { status: "approved" }) : r; });
+  localStorage.setItem("winzo_results", JSON.stringify(results));
+  if (window.WINZO_SB) {
+    try { await window.WINZO_SB.from("results").update({ status: "approved" }).eq("id", resultId); } catch(e) {}
+  }
+
+  showToast("Winner declared! ₹" + prize + " chips credited to " + winnerName + ".", "success");
+  window.syncAndReload("search-screenshots", "Search Screenshots");
+};
+
+// ── Cancel result and refund both players ────────────────────
+window.adminCancelResult = async function(resultId, uid1, uid2, entryAmount) {
+  if (!confirm("Cancel this game and refund ₹" + entryAmount + " chips to both players?")) return;
+  var users = getLiveUsers();
+  [uid1, uid2].forEach(function(uid) {
+    var u = users.find(function(x){ return x.uid === uid; });
+    if (u) {
+      u.chips = Number(u.chips || 0) + entryAmount;
+      u.wallet = u.chips;
+      if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", uid).then(function(){});
+    }
+  });
+  saveLiveUsers(users);
+
+  // Mark result as rejected
+  var results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
+  results = results.map(function(r){ return r.id === resultId ? Object.assign({}, r, { status: "rejected" }) : r; });
+  localStorage.setItem("winzo_results", JSON.stringify(results));
+  if (window.WINZO_SB) {
+    try { await window.WINZO_SB.from("results").update({ status: "rejected" }).eq("id", resultId); } catch(e) {}
+  }
+
+  showToast("Game cancelled. Chips refunded to both players.", "success");
+  window.syncAndReload("search-screenshots", "Search Screenshots");
 };
 
 window.adminDeleteSet = async function (id) {
@@ -198,10 +301,11 @@ window.adminToggleKyc = function (uid, approve) {
   u.kycVerified = approve;
   if (approve) { delete u.kycRejected; } else { u.kycRejected = true; }
   saveLiveUsers(users);
-  if (window.WINZO_SB) window.WINZO_SB.from("users").update({ kyc_verified: approve }).eq("uid", uid).then(function(){});
+  if (window.WINZO_SB) window.WINZO_SB.from("users").update({ kyc_verified: approve, kyc_rejected: !approve }).eq("uid", uid).then(function(){});
   var session = JSON.parse(localStorage.getItem("winzo_session") || "null");
   if (session && session.uid === uid) {
     session.kycVerified = approve;
+    session.kycRejected = !approve;
     localStorage.setItem("winzo_session", JSON.stringify(session));
   }
   var badge = document.getElementById("kyc-badge-" + uid);
@@ -633,4 +737,62 @@ window.showAddBlacklist = function () {
   document.getElementById("menu-toggle").addEventListener("click", function () {
     document.getElementById("sidebar").classList.toggle("open");
   });
+})();
+
+// ── Auto-cancel stale challenges (1 hour timeout) ─────────────
+(function startAutoCancelJob() {
+  var ONE_HOUR = 60 * 60 * 1000;
+
+  async function autoCancelStale() {
+    var sets = getLiveSets();
+    var now = Date.now();
+    var stale = sets.filter(function(s) {
+      // Already started games are NOT auto-cancelled
+      if (s.startedAt) return false;
+      // Use acceptedAt for matched, at for open
+      var ref = s.acceptedAt || s.at;
+      return ref && (now - new Date(ref).getTime()) >= ONE_HOUR;
+    });
+    if (!stale.length) return;
+
+    var users = getLiveUsers();
+    stale.forEach(function(s) {
+      // Refund chips to both players
+      var refundUids = [s.uid];
+      if (s.acceptedBy) refundUids.push(s.acceptedBy);
+      refundUids.forEach(function(uid) {
+        var u = users.find(function(x){ return x.uid === uid; });
+        if (u) {
+          u.chips = Number(u.chips || 0) + Number(s.value || 0);
+          u.wallet = u.chips;
+          if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", uid).then(function(){});
+        }
+      });
+    });
+    saveLiveUsers(users);
+
+    // Remove stale from localStorage
+    var staleIds = stale.map(function(s){ return s.id; });
+    var remaining = sets.filter(function(s){ return !staleIds.includes(s.id); });
+    localStorage.setItem("winzo_sets_global", JSON.stringify(remaining));
+
+    // Remove from Supabase
+    if (window.WINZO_SB) {
+      for (var i = 0; i < staleIds.length; i++) {
+        try { await window.WINZO_SB.from("challenges").delete().eq("id", staleIds[i]); } catch(e) {}
+      }
+    }
+
+    console.info("[WinzoIndia] Auto-cancelled " + stale.length + " stale challenge(s) (>1h).");
+
+    // Re-render if on running-challenges panel
+    var title = document.getElementById("topbar-title");
+    if (title && title.textContent === "Running Challenges") {
+      window.loadPanel("running-challenges", "Running Challenges");
+    }
+  }
+
+  // Run immediately, then every 60 seconds
+  autoCancelStale();
+  setInterval(autoCancelStale, 60 * 1000);
 })();

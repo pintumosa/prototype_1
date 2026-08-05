@@ -22,7 +22,7 @@
         <div class="brand-mark">W</div>
         <div class="brand-name">Winzo<span>India</span></div>
       </a>
-      <ul class="nav-links">
+      <ul class="nav-links" id="nav-links">
         <li><a href="index.html" class="active">Home</a></li>
         <li><a href="#games">Games</a></li>
         <li><a href="#features">Why Winzo</a></li>
@@ -37,6 +37,7 @@
         <a href="dashboard.html" class="btn btn-secondary">Hi, <span data-user-name>Player</span></a>
         <a href="#" id="logout-btn" class="btn btn-primary">Logout</a>
       </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </nav>
 
@@ -175,5 +176,11 @@
       if (!fresh || !fresh.kycVerified) { window.location.href = "pending.html"; return; }
       window.location.href = card.getAttribute("href") || "dashboard.html";
     });  </script>
+  <script>
+    const hb = document.getElementById('nav-hamburger');
+    const nl = document.getElementById('nav-links');
+    hb.addEventListener('click', () => { hb.classList.toggle('open'); nl.classList.toggle('open'); });
+    nl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { hb.classList.remove('open'); nl.classList.remove('open'); }));
+  </script>
 </body>
 </html>

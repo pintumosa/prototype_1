@@ -19,13 +19,16 @@ function mapUser(r) {
   return { uid:r.uid, fullName:r.full_name, phone:r.phone, email:r.email,
     kycType:r.kyc_type, kycUrl:r.kyc_url, kycKey:r.kyc_key||null,
     kycBackUrl:r.kyc_back_url||null, kycBackKey:r.kyc_back_key||null,
-    kycVerified:r.kyc_verified, chips:r.chips||0, wallet:r.chips||0,
-    createdAt:r.created_at };
+    aadhaarNumber:r.aadhaar_number||null, panNumber:r.pan_number||null,
+    panUrl:r.pan_url||null, panKey:r.pan_key||null,
+    kycVerified:r.kyc_verified, kycRejected:r.kyc_rejected||false,
+    chips:r.chips||0, wallet:r.chips||0, createdAt:r.created_at };
 }
 function mapSet(r) {
   return { id:r.id, gameId:r.game_id, uid:r.uid, byName:r.by_name, value:r.value,
     gameType:r.game_type, acceptedBy:r.accepted_by, acceptedByName:r.accepted_by_name,
-    acceptedAt:r.accepted_at, roomCode:r.room_code, startedAt:r.started_at||null, at:r.at };
+    acceptedAt:r.accepted_at, roomCode:r.room_code, startedAt:r.started_at||null,
+    startedByName:r.started_by||null, at:r.at };
 }
 function mapDeposit(r) {
   return { id:r.id, uid:r.uid, user:r.user_name, userPhone:r.user_phone,

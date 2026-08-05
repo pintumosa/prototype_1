@@ -56,38 +56,48 @@
           <input id="password" name="password" type="password" placeholder="At least 6 characters" required minlength="6" data-testid="signup-password-input" />
         </div>
 
+        <!-- Aadhaar -->
         <div class="field">
-          <label for="kycType">KYC Document Type</label>
-          <select id="kycType" name="kycType" required data-testid="signup-kyc-type">
-            <option value="">Choose a document…</option>
-            <option value="aadhaar">Aadhaar Card</option>
-            <option value="pan">PAN Card</option>
-            <option value="dl">Driving Licence</option>
-            <option value="passport">Passport</option>
-          </select>
+          <label for="aadhaarNumber">Aadhaar Number</label>
+          <input id="aadhaarNumber" name="aadhaarNumber" type="text" inputmode="numeric" maxlength="12" placeholder="12-digit Aadhaar number" required pattern="\d{12}" data-testid="signup-aadhaar-number" />
         </div>
-
         <div class="field">
-          <label>Front Side of Document</label>
+          <label>Aadhaar Front</label>
           <label class="file-drop" for="kycFile" id="kyc-drop" data-testid="signup-kyc-upload">
             <i class="ph ph-identification-card"></i>
-            <p><strong>Click to upload front</strong> or drag &amp; drop</p>
-            <p class="hint">JPG, PNG or PDF · Max 5 MB · Encrypted &amp; stored securely</p>
+            <p><strong>Click to upload Aadhaar front</strong> or drag &amp; drop</p>
+            <p class="hint">JPG, PNG or PDF · Max 5 MB</p>
             <input id="kycFile" name="kycFile" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
           </label>
           <div id="kyc-file-info" class="file-info" data-testid="kyc-file-info"></div>
         </div>
-
-        <div class="field" id="kyc-back-field" style="display:none;">
-          <label>Back Side of Document</label>
+        <div class="field">
+          <label>Aadhaar Back</label>
           <label class="file-drop" for="kycBackFile" id="kyc-back-drop">
             <i class="ph ph-identification-card-reverse"></i>
-            <p><strong>Click to upload back</strong> or drag &amp; drop</p>
+            <p><strong>Click to upload Aadhaar back</strong> or drag &amp; drop</p>
             <p class="hint">JPG, PNG or PDF · Max 5 MB</p>
-            <input id="kycBackFile" name="kycBackFile" type="file" accept=".jpg,.jpeg,.png,.pdf" />
+            <input id="kycBackFile" name="kycBackFile" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
           </label>
           <div id="kyc-back-file-info" class="file-info"></div>
         </div>
+
+        <!-- PAN -->
+        <div class="field">
+          <label for="panNumber">PAN Card Number</label>
+          <input id="panNumber" name="panNumber" type="text" maxlength="10" placeholder="e.g. ABCDE1234F" required pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}" style="text-transform:uppercase;" data-testid="signup-pan-number" />
+        </div>
+        <div class="field">
+          <label>PAN Card Image</label>
+          <label class="file-drop" for="panFile" id="pan-drop">
+            <i class="ph ph-identification-badge"></i>
+            <p><strong>Click to upload PAN card</strong> or drag &amp; drop</p>
+            <p class="hint">JPG, PNG or PDF · Max 5 MB</p>
+            <input id="panFile" name="panFile" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
+          </label>
+          <div id="pan-file-info" class="file-info"></div>
+        </div>
+        <input type="hidden" id="kycType" name="kycType" value="aadhaar" />
 
         <button type="submit" class="btn btn-primary btn-block btn-lg" data-testid="signup-submit-btn">
           <i class="ph-fill ph-rocket-launch"></i> Create Account
@@ -115,14 +125,9 @@
     const backDrop = document.getElementById("kyc-back-drop");
     const backInput = document.getElementById("kycBackFile");
     const backInfo = document.getElementById("kyc-back-file-info");
-    const backField = document.getElementById("kyc-back-field");
-
-    // Show/hide back-side field based on doc type
-    const NEEDS_BACK = ["aadhaar","dl","passport"];
-    document.getElementById("kycType").addEventListener("change", function() {
-      backField.style.display = NEEDS_BACK.includes(this.value) ? "" : "none";
-      backInput.required = NEEDS_BACK.includes(this.value);
-    });
+    const panDrop = document.getElementById("pan-drop");
+    const panInput = document.getElementById("panFile");
+    const panInfo = document.getElementById("pan-file-info");
 
     function setupDrop(dropEl, inputEl, infoEl) {
       ["dragenter","dragover"].forEach(ev =>
@@ -141,17 +146,30 @@
     }
     setupDrop(drop, fileInput, fileInfo);
     setupDrop(backDrop, backInput, backInfo);
+    setupDrop(panDrop, panInput, panInfo);
+
+    document.getElementById("panNumber").addEventListener("input", function() {
+      this.value = this.value.toUpperCase();
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errBox.style.display = "none";
       const file = fileInput.files[0];
       const backFile = backInput.files[0];
-      const kycType = form.kycType.value;
-      if (!file) { errBox.textContent = "Please upload the front side of your document."; errBox.style.display = "block"; return; }
-      if (file.size > 5*1024*1024) { errBox.textContent = "Front file must be under 5 MB."; errBox.style.display = "block"; return; }
-      if (NEEDS_BACK.includes(kycType) && !backFile) { errBox.textContent = "Please upload the back side of your document."; errBox.style.display = "block"; return; }
-      if (backFile && backFile.size > 5*1024*1024) { errBox.textContent = "Back file must be under 5 MB."; errBox.style.display = "block"; return; }
+      const panFile = panInput.files[0];
+      const aadhaarNumber = document.getElementById("aadhaarNumber").value.trim();
+      const panNumber = document.getElementById("panNumber").value.trim().toUpperCase();
+
+      if (!/^\d{12}$/.test(aadhaarNumber)) { errBox.textContent = "Enter a valid 12-digit Aadhaar number."; errBox.style.display = "block"; return; }
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNumber)) { errBox.textContent = "Enter a valid PAN number (e.g. ABCDE1234F)."; errBox.style.display = "block"; return; }
+      if (!file) { errBox.textContent = "Please upload Aadhaar front."; errBox.style.display = "block"; return; }
+      if (!backFile) { errBox.textContent = "Please upload Aadhaar back."; errBox.style.display = "block"; return; }
+      if (!panFile) { errBox.textContent = "Please upload PAN card image."; errBox.style.display = "block"; return; }
+      if (file.size > 5*1024*1024 || backFile.size > 5*1024*1024 || panFile.size > 5*1024*1024) {
+        errBox.textContent = "Each file must be under 5 MB."; errBox.style.display = "block"; return;
+      }
+
       const btn = form.querySelector('button[type="submit"]');
       btn.disabled = true;
       btn.innerHTML = '<i class="ph ph-spinner"></i> Creating account…';
@@ -161,9 +179,12 @@
           phone: form.phone.value.trim(),
           email: form.email.value.trim(),
           password: form.password.value,
-          kycType,
+          kycType: "aadhaar",
+          aadhaarNumber,
+          panNumber,
           kycFile: file,
-          kycBackFile: backFile || null
+          kycBackFile: backFile,
+          panFile
         });
         window.WinzoAuth.toast("Account created! Welcome ₹500 bonus added.", "success");
         setTimeout(() => window.location.href = "dashboard.html", 700);
