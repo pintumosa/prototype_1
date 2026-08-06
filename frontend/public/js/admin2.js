@@ -8,8 +8,8 @@ var _elapsedTimer = null;
 
 function startLiveRefresh(key, label) {
   stopLiveRefresh();
-  // Refresh data + re-render every 8 seconds
   _liveRefreshTimer = setInterval(function() {
+    if (document.hidden) return; // skip when tab not visible
     if (document.getElementById("topbar-title").textContent === (label || key)) {
       getLiveSetsAsync().then(function() {
         if (document.getElementById("topbar-title").textContent === (label || key)) {
@@ -20,7 +20,7 @@ function startLiveRefresh(key, label) {
         }
       });
     } else { stopLiveRefresh(); }
-  }, 8000);
+  }, 15000);
   startElapsedTick();
 }
 
@@ -79,20 +79,15 @@ window.filterTable = function (input, tbodyId) {
   });
 };
 
-window.adminViewKyc = async function (key) {
-  var url;
-  try {
-    var res = await fetch((window.WINZO_ENV?.BACKEND_URL || "http://localhost:8001") + "/api/kyc/url?key=" + encodeURIComponent(key));
-    var data = await res.json();
-    url = data.url;
-  } catch (e) { showToast("Could not load document. Backend may be offline.", "error"); return; }
-  window.adminShowDocModal(url);
+window.adminViewKyc = function (key) {
+  // key is now the Storj public URL directly
+  window.adminShowDocModal(key);
 };
 
 window.adminShowDocModal = function(url) {
   var existing = document.getElementById("kyc-doc-modal");
   if (existing) existing.remove();
-  var isImg = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url) || url.startsWith("data:image");
+  var isImg = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url) || url.startsWith("data:image") || /link\.storjshare\.io/i.test(url);
   var content = isImg
     ? `<img src="${url}" style="max-width:100%;max-height:75vh;border-radius:8px;display:block;margin:0 auto;" />`
     : `<iframe src="${url}" style="width:100%;height:75vh;border:none;border-radius:8px;"></iframe>`;

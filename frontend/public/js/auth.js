@@ -86,24 +86,30 @@ async function compressImage(file, maxWidthPx, qualityVal) {
     img.src = url;
   });
 }
+window.compressImage = compressImage;
+
+// ── Storj upload (shared for KYC + screenshots + reports) ──
+// Returns { url, key } on success, or throws.
+async function wzUploadToStorj(file, folder, token) {
+  const fnUrl = window.WINZO_ENV?.SUPABASE_URL + "/functions/v1/storj-upload";
+  const res = await fetch(fnUrl, {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, contentType: file.type, folder })
+  });
+  if (!res.ok) throw new Error("Presign failed: " + res.status);
+  const { uploadUrl, publicUrl, key } = await res.json();
+  await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+  return { url: publicUrl, key };
+}
+window.wzUploadToStorj = wzUploadToStorj;
 
 async function wzUploadKycFile(file, uid, token) {
   if (window.WINZO_SB && token) {
     try {
-      const fnUrl = window.WINZO_ENV?.SUPABASE_URL + "/functions/v1/kyc-upload";
-      // 1. Get presigned URL from Edge Function
-      const res = await fetch(fnUrl, {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, contentType: file.type })
-      });
-      if (res.ok) {
-        const { uploadUrl, publicUrl, kycKey } = await res.json();
-        // 2. Upload directly to Storj
-        await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-        return { kycUrl: publicUrl, kycKey };
-      }
-    } catch (e) { console.warn("Storj upload failed:", e.message); }
+      const { url, key } = await wzUploadToStorj(file, "kyc/" + uid, token);
+      return { kycUrl: url, kycKey: key };
+    } catch (e) { console.warn("Storj KYC upload failed:", e.message); }
   }
   // Fallback: base64
   const dataUrl = await new Promise((resolve, reject) => {
@@ -186,7 +192,8 @@ async function wzSignup(payload) {
         email: payload.email, kyc_type: payload.kycType,
         aadhaar_number: payload.aadhaarNumber || null,
         pan_number: payload.panNumber || null,
-        kyc_url: kycResult.kycUrl, kyc_back_url: kycBackResult.kycUrl,
+        kyc_url: kycResult.kycUrl, kyc_key: kycResult.kycKey,
+        kyc_back_url: kycBackResult.kycUrl,
         kyc_back_key: kycBackResult.kycKey,
         pan_url: panResult.kycUrl, pan_key: panResult.kycKey,
         kyc_verified: false,
@@ -220,7 +227,8 @@ async function wzLogin(identifier, password) {
       const { data: dbUser } = await window.WINZO_SB.from("users").select("*").eq("uid", data.user.id).single();
       const merged = dbUser ? {
         uid: dbUser.uid, fullName: dbUser.full_name, phone: dbUser.phone,
-        email: dbUser.email, kycType: dbUser.kyc_type, kycUrl: dbUser.kyc_url,
+        email: dbUser.email, kycType: dbUser.kyc_type,
+        kycUrl: dbUser.kyc_url, kycKey: dbUser.kyc_key || null,
         kycBackUrl: dbUser.kyc_back_url || null, kycBackKey: dbUser.kyc_back_key || null,
         aadhaarNumber: dbUser.aadhaar_number || null, panNumber: dbUser.pan_number || null,
         panUrl: dbUser.pan_url || null, panKey: dbUser.pan_key || null,
@@ -254,9 +262,6 @@ async function wzLogin(identifier, password) {
 }
 
 function wzLogout() {
-  if (window.WINZO_FIREBASE_READY && window.WINZO_AUTH) {
-    try { window.WINZO_AUTH.signOut(); } catch (e) { /* noop */ }
-  }
   if (window.WINZO_SB) {
     window.WINZO_SB.auth.signOut().catch(() => {});
   }

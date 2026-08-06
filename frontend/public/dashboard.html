@@ -348,21 +348,16 @@
     }
     document.querySelectorAll("[data-user-name]").forEach(el => el.textContent = session.fullName.split(" ")[0]);
     refreshView();
-    // Initial load: fetch fresh from Supabase once, then render
-    window.WinzoSets.getAsync().then(function(arr) {
-      _paintSets(arr);
-      _paintMatchRoom(arr);
-    });
-    setInterval(refreshView, 30000);
+    window.WinzoSets.getAsync().then(function(arr) { _paintSets(arr); _paintMatchRoom(arr); });
 
-    // Single shared poll — one Supabase fetch feeds both renders
+    // Single poll every 10s — fetches sets + refreshes user every 3rd tick (30s)
+    var _pollCount = 0;
     setInterval(function() {
-      window.WinzoSets.getAsync().then(function(merged) {
-        // getAsync already merges remote+local and saves to localStorage
-        _paintSets(merged);
-        _paintMatchRoom(merged);
-      });
-    }, 5000);
+      if (document.hidden) return; // skip when tab not visible
+      _pollCount++;
+      window.WinzoSets.getAsync().then(function(merged) { _paintSets(merged); _paintMatchRoom(merged); });
+      if (_pollCount % 3 === 0) refreshView();
+    }, 10000);
 
     var _lastSetsHash = "";
     function _paintSets(arr) {
@@ -723,7 +718,16 @@
       const f = document.getElementById("result-proof").files[0];
       if (!f) return window.WinzoAuth.toast("Screenshot required.", "error");
       if (f.size > 5*1024*1024) return window.WinzoAuth.toast("File must be under 5 MB.", "error");
-      const proofUrl = await new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); });
+      const cf = await compressImage(f, 1280, 0.80);
+      let proofUrl, proofKey = null;
+      try {
+        const sbSession = JSON.parse(localStorage.getItem("winzo_sb_session") || "null");
+        const token = sbSession?.access_token;
+        const { url, key } = await window.wzUploadToStorj(cf, "screenshots/" + session.uid, token);
+        proofUrl = url; proofKey = key;
+      } catch(e) {
+        proofUrl = await new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(cf); });
+      }
 
       const isSetter = match.uid === session.uid;
       const opponentUid = isSetter ? match.acceptedBy : match.uid;
@@ -747,6 +751,7 @@
         roomCode: match.roomCode || "—",
         result: resultVal,
         proofUrl,
+        proofKey: proofKey || null,
         screenshotAt: new Date().toLocaleString("en-IN"),
         status: "pending",
         at: new Date().toLocaleString("en-IN")
@@ -790,9 +795,18 @@
       const f = document.getElementById("rProof").files[0];
       if (!f) return window.WinzoAuth.toast("Win-proof screenshot required.", "error");
       if (f.size > 5*1024*1024) return window.WinzoAuth.toast("File must be under 5 MB.", "error");
-      const proofUrl = await new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); });
+      const cf = await compressImage(f, 1280, 0.80);
+      let proofUrl, proofKey = null;
+      try {
+        const sbSession = JSON.parse(localStorage.getItem("winzo_sb_session") || "null");
+        const token = sbSession?.access_token;
+        const { url, key } = await window.wzUploadToStorj(cf, "reports/" + session.uid, token);
+        proofUrl = url; proofKey = key;
+      } catch(e) {
+        proofUrl = await new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(cf); });
+      }
       const reports = window.WinzoReports.get();
-      const rep = { id:"r_"+Date.now(), reporterUid:session.uid, reporterName:session.fullName, opponent:document.getElementById("rOpponent").value.trim(), details:document.getElementById("rDetails").value.trim(), proofUrl, screenshotAt:new Date().toLocaleString("en-IN"), status:"pending", at:Date.now() };
+      const rep = { id:"r_"+Date.now(), reporterUid:session.uid, reporterName:session.fullName, opponent:document.getElementById("rOpponent").value.trim(), details:document.getElementById("rDetails").value.trim(), proofUrl, proofKey: proofKey||null, screenshotAt:new Date().toLocaleString("en-IN"), status:"pending", at:Date.now() };
       reports.push(rep);
       window.WinzoReports.save(reports);
       window.WinzoReports.saveOne(rep);

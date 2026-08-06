@@ -21,8 +21,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          STORAGE_PROVIDER: ${{ secrets.STORAGE_PROVIDER }}
-          STORJ_UPLOAD_URL: ${{ secrets.STORJ_UPLOAD_URL }}
+          STORAGE_PROVIDER: storj
         run: node scripts/generate-env.js
 
       - name: Deploy to GitHub Pages

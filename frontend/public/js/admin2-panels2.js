@@ -123,7 +123,8 @@ PANELS["search-screenshots"] = function() {
   var reports = getLiveReports();
   var all = results.concat(reports.map(function(r){ return { _type:"report", submitterName:r.reporterName, submitterPhone:"—", opponentName:r.opponent, opponentPhone:"—", gameType:"—", amount:"—", result:"report", proofUrl:r.proofUrl, screenshotAt:r.screenshotAt||null, status:r.status, at:r.at||"—" }; }));
   var rows = all.map(function(r,i){
-    var thumb = r.proofUrl ? "<a href=\""+r.proofUrl+"\" target=\"_blank\"><img src=\""+r.proofUrl+"\" style=\"width:48px;height:36px;object-fit:cover;border-radius:4px;cursor:pointer;\" /></a>" : "—";
+    var imgUrl = r.proofKey || r.proofUrl;
+    var thumb = imgUrl ? "<img src=\""+imgUrl+"\" style=\"width:48px;height:36px;object-fit:cover;border-radius:4px;cursor:pointer;\" onclick=\"window.adminShowDocModal('"+imgUrl+"')\" />" : "—";
     var actions = "—";
     if (!r._type && r.status === "pending") {
       var prize = Math.floor(Number(r.amount||0) * 2 * 0.95);
