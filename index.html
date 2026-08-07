@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0A0A0F" />
+  <meta name="description" content="WinzoIndia — India's premium skill gaming platform. Play Ludo, Snake & Ladder and win real cash." />
+  <title>WinzoIndia — Play. Win. Conquer.</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- NAV -->
+  <nav class="nav" data-testid="landing-nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand" data-testid="brand-logo">
+        <div class="brand-mark">W</div>
+        <div class="brand-name">Winzo<span>India</span></div>
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="#games">Games</a></li>
+        <li><a href="#features">Why Winzo</a></li>
+        <li><a href="dashboard.html">Play</a></li>
+      </ul>
+      <a href="https://wa.me/919812543183" target="_blank" rel="noopener" class="wz-helpline" title="WhatsApp Helpline"><i class="ph-fill ph-whatsapp-logo"></i><span> +91-9812543183</span></a>
+      <div class="nav-actions" id="nav-auth">
+        <a href="login.html" class="btn btn-secondary" data-testid="nav-login-btn">Sign in</a>
+        <a href="signup.html" class="btn btn-primary" data-testid="nav-signup-btn">Get started</a>
+      </div>
+      <div class="nav-actions" id="nav-profile" hidden>
+        <a href="dashboard.html" class="btn btn-secondary">Hi, <span data-user-name>Player</span></a>
+        <a href="#" id="logout-btn" class="btn btn-primary">Logout</a>
+      </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" data-testid="hero-section">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <span class="eyebrow">India's #1 Skill Gaming Arena</span>
+      <h1>PLAY. WIN. <br/><span class="gold">CONQUER.</span></h1>
+      <p>Battle the country's sharpest minds across Ludo and Snake &amp; Ladder tournaments. Instant withdrawals, verified players, provably fair matches.</p>
+      <div class="hero-cta">
+        <a href="signup.html" class="btn btn-primary btn-lg" data-testid="hero-cta-signup">
+          <i class="ph-fill ph-game-controller"></i> Play Now
+        </a>
+        <a href="#features" class="btn btn-secondary btn-lg">
+          <i class="ph ph-arrow-down"></i> Learn More
+        </a>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" data-testid="stat-players">2.4M+</div>
+          <div class="stat-label">Verified Players</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">₹120Cr+</div>
+          <div class="stat-label">Winnings Paid</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">99.9%</div>
+          <div class="stat-label">Uptime</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">24×7</div>
+          <div class="stat-label">Live Support</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Why WinzoIndia</span>
+        <h2>Built for serious players.</h2>
+        <p>From KYC to withdrawal, every layer is engineered for trust, speed and fair competition.</p>
+      </div>
+      <div class="features-grid">
+        <div class="card feature" data-testid="feature-fair-play">
+          <div class="feature-icon"><i class="ph-fill ph-shield-check"></i></div>
+          <h3>Provably Fair</h3>
+          <p>RNG-certified engine audited by independent third parties. Every roll and every move is verifiable on-chain.</p>
+        </div>
+        <div class="card feature" data-testid="feature-kyc">
+          <div class="feature-icon"><i class="ph-fill ph-identification-badge"></i></div>
+          <h3>Secure KYC</h3>
+          <p>Bank-grade document verification with encrypted storage. Aadhaar, PAN, Driving Licence or Passport accepted.</p>
+        </div>
+        <div class="card feature" data-testid="feature-withdrawals">
+          <div class="feature-icon"><i class="ph-fill ph-lightning"></i></div>
+          <h3>Instant Withdrawals</h3>
+          <p>UPI, Net Banking and wallets — cash out your winnings in under 60 seconds, any day, any time.</p>
+        </div>
+        <div class="card feature">
+          <div class="feature-icon"><i class="ph-fill ph-trophy"></i></div>
+          <h3>Daily Tournaments</h3>
+          <p>Compete in mega tournaments with prize pools starting at ₹10,000 and climbing to seven figures.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOBBY OPTIONS -->
+  <section class="section" id="games" style="padding-top:20px;">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Choose Your Battle</span>
+        <h2>Pick a lobby &amp; play.</h2>
+        <p>Select any game mode below and jump straight into the action.</p>
+      </div>
+      <div class="lobby-grid" id="lobby-grid">
+        <!-- populated by JS from winzo_games / defaults -->
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p><strong>WinzoIndia</strong> · Play responsibly. 18+ only. Games of skill.</p>
+      <p style="margin-top:8px;">© 2026 WinzoIndia Gaming Pvt Ltd. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script defer src="js/env.js"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/main.js"></script>
+  <script>
+    // ── Render lobby from winzo_games (admin-managed) ──
+    const GAME_ICONS = {
+      "Full Game": "ph-crown", "1 Goti": "ph-circle", "2 Goti": "ph-circles-three",
+      "3 Goti": "ph-dots-three-circle", "Ulta": "ph-arrows-counter-clockwise",
+      "1 Six": "ph-dice-six", "Snake & Ladder": "ph-path"
+    };
+    const DEFAULT_GAMES = [
+      { id:"g1", name:"Full Game",      status:"active" },
+      { id:"g2", name:"1 Goti",         status:"active" },
+      { id:"g3", name:"2 Goti",         status:"active" },
+      { id:"g4", name:"3 Goti",         status:"active" },
+      { id:"g5", name:"Ulta",           status:"active" },
+      { id:"g6", name:"1 Six",          status:"active" },
+      { id:"g7", name:"Snake & Ladder", status:"active" },
+    ];
+    (function renderLobby() {
+      const games = (function(){ try { return JSON.parse(localStorage.getItem("winzo_games") || "null") || DEFAULT_GAMES; } catch(e){ return DEFAULT_GAMES; } })();
+      const grid = document.getElementById("lobby-grid");
+      grid.innerHTML = games.filter(g => g.status === "active").map(g => {
+        const icon = GAME_ICONS[g.name] || "ph-game-controller";
+        return `<a href="dashboard.html" class="lobby-card">
+          <div class="lobby-icon"><i class="ph-fill ${icon}"></i></div>
+          <div class="lobby-info"><h3>${g.name}</h3><span>Entry: ₹${Number(g.entry||0).toLocaleString("en-IN")} · Prize: ₹${Number(g.prize||0).toLocaleString("en-IN")}</span></div>
+        </a>`;
+      }).join("");
+    })();
+
+    // Guard lobby cards: redirect unverified users to pending page
+    document.getElementById("lobby-grid").addEventListener("click", (e) => {
+      const card = e.target.closest(".lobby-card");
+      if (!card) return;
+      e.preventDefault();
+      const session = window.WinzoAuth.session();
+      if (!session) { window.location.href = "login.html"; return; }
+      const users = window.WinzoAuth.getUsers();
+      const fresh = users.find(u => u.uid === session.uid);
+      if (!fresh || !fresh.kycVerified) { window.location.href = "pending.html"; return; }
+      window.location.href = card.getAttribute("href") || "dashboard.html";
+    });  </script>
+  <script>
+    const hb = document.getElementById('nav-hamburger');
+    const nl = document.getElementById('nav-links');
+    hb.addEventListener('click', () => { hb.classList.toggle('open'); nl.classList.toggle('open'); });
+    nl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { hb.classList.remove('open'); nl.classList.remove('open'); }));
+  </script>
+</body>
+</html>
