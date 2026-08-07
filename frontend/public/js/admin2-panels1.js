@@ -197,7 +197,6 @@ ${users.length ? users.map(function(u,i){return `<tr><td>${i+1}</td><td style="f
   <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:var(--accent);border-color:var(--accent);" onclick="adminResetUserPassword('${esc(u.uid)}','${esc(u.email||"")}','${esc(u.fullName||u.name||"")}')"><i class="ph ph-key"></i> Reset Pass</button>
   <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:#a78bfa;border-color:#a78bfa;" onclick="adminViewUserProfile('${esc(u.uid)}')"><i class="ph ph-user-circle"></i> Profile</button>
   ${u.blocked ? `<button class="btn btn-primary" style="padding:5px 10px;font-size:11px;background:#16a34a;border-color:#16a34a;" onclick="adminBlockUser('${esc(u.uid)}',false)"><i class="ph ph-lock-open"></i> Unblock</button>` : `<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:#f97316;border-color:#f97316;" onclick="adminBlockUser('${esc(u.uid)}',true)"><i class="ph ph-lock"></i> Block</button>`}
-  ${u.blocked ? `<button class="btn btn-primary" style="padding:5px 10px;font-size:11px;background:#16a34a;border-color:#16a34a;" onclick="adminBlockUser('${esc(u.uid)}',false)"><i class="ph ph-lock-open"></i> Unblock</button>` : `<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:#f97316;border-color:#f97316;" onclick="adminBlockUser('${esc(u.uid)}',true)"><i class="ph ph-lock"></i> Block</button>`}
 </tbody></table></div>`;
 };
 
