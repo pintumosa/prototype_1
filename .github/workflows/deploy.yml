@@ -21,7 +21,22 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          STORAGE_PROVIDER: ${{ secrets.STORAGE_PROVIDER }}
+          STORJ_UPLOAD_URL: ${{ secrets.STORJ_UPLOAD_URL }}
         run: node scripts/generate-env.js
+
+      - name: Deploy Supabase Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          npx supabase@latest functions deploy upload-kyc --project-ref $SUPABASE_PROJECT_ID
+          npx supabase@latest secrets set \
+            STORJ_ENDPOINT=${{ secrets.STORJ_ENDPOINT }} \
+            STORJ_ACCESS_KEY=${{ secrets.STORJ_ACCESS_KEY }} \
+            STORJ_SECRET_KEY=${{ secrets.STORJ_SECRET_KEY }} \
+            STORJ_BUCKET=${{ secrets.STORJ_BUCKET }} \
+            --project-ref $SUPABASE_PROJECT_ID
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

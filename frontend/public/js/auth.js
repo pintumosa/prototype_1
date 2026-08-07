@@ -88,17 +88,41 @@ async function compressImage(file, maxWidthPx, qualityVal) {
 }
 
 async function wzUploadKycFile(file, uid, token) {
-  if (window.WINZO_SB && token) {
+  const provider = (window.WINZO_ENV || {}).STORAGE_PROVIDER || "supabase";
+
+  if (provider === "storj") {
+    // Storj: POST to your backend proxy which returns a presigned URL or the final URL
     try {
-      const path = `kyc/${uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-      const { error } = await window.WINZO_SB.storage.from("kyc-docs").upload(path, file, { upsert: true });
-      if (!error) {
-        const { data: urlData } = window.WINZO_SB.storage.from("kyc-docs").getPublicUrl(path);
-        return { kycUrl: urlData.publicUrl, kycKey: path };
+      const env = window.WINZO_ENV || {};
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("uid", uid);
+      const res = await fetch(env.STORJ_UPLOAD_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const { url, key } = await res.json();
+        return { kycUrl: url, kycKey: key };
       }
-      console.warn("Supabase storage upload failed:", error.message);
-    } catch (e) { console.warn("KYC upload error:", e.message); }
+      console.warn("Storj upload failed:", await res.text());
+    } catch (e) { console.warn("Storj upload error:", e.message); }
+  } else {
+    // Supabase storage (default)
+    if (window.WINZO_SB && token) {
+      try {
+        const path = `kyc/${uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const { error } = await window.WINZO_SB.storage.from("kyc-docs").upload(path, file, { upsert: true });
+        if (!error) {
+          const { data: urlData } = window.WINZO_SB.storage.from("kyc-docs").getPublicUrl(path);
+          return { kycUrl: urlData.publicUrl, kycKey: path };
+        }
+        console.warn("Supabase storage upload failed:", error.message);
+      } catch (e) { console.warn("KYC upload error:", e.message); }
+    }
   }
+
   // Fallback: base64
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
