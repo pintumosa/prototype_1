@@ -54,34 +54,38 @@ function mapResult(r) {
 }
 
 // ── Live readers (Supabase-first, localStorage fallback) ──────
+function _safeLocalSet(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); }
+  catch (e) { if (window.wzReportError) wzReportError("localStorage quota exceeded (" + key + "): " + e.message); }
+}
 async function getLiveUsersAsync() {
   const data = await sbFetch("users", "created_at");
-  if (data) { const mapped = data.map(mapUser); localStorage.setItem("winzo_users", JSON.stringify(mapped)); return mapped; }
+  if (data) { const mapped = data.map(mapUser); _safeLocalSet("winzo_users", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_users") || "[]"); } catch(e) { return []; }
 }
 async function getLiveSetsAsync() {
   const data = await sbFetch("challenges", "at");
-  if (data) { const mapped = data.map(mapSet); localStorage.setItem("winzo_sets_global", JSON.stringify(mapped)); return mapped; }
+  if (data) { const mapped = data.map(mapSet); _safeLocalSet("winzo_sets_global", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_sets_global") || "[]"); } catch(e) { return []; }
 }
 async function getLiveDepositsAsync() {
   const data = await sbFetch("deposits", "created_at");
-  if (data) { const mapped = data.map(mapDeposit); localStorage.setItem("winzo_deposits", JSON.stringify(mapped)); return mapped; }
+  if (data) { const mapped = data.map(mapDeposit); _safeLocalSet("winzo_deposits", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_deposits") || "[]"); } catch(e) { return []; }
 }
 async function getLiveWithdrawalsAsync() {
   const data = await sbFetch("withdraws", "created_at");
-  if (data) { const mapped = data.map(mapWithdraw); localStorage.setItem("winzo_withdraws", JSON.stringify(mapped)); return mapped; }
+  if (data) { const mapped = data.map(mapWithdraw); _safeLocalSet("winzo_withdraws", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_withdraws") || "[]"); } catch(e) { return []; }
 }
 async function getLiveReportsAsync() {
   const data = await sbFetch("reports", "created_at");
-  if (data) { const mapped = data.map(mapReport); localStorage.setItem("winzo_reports", JSON.stringify(mapped)); return mapped; }
+  if (data) { const mapped = data.map(mapReport); _safeLocalSet("winzo_reports", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_reports") || "[]"); } catch(e) { return []; }
 }
 async function getLiveResultsAsync() {
   const data = await sbFetch("results", "created_at");
-  if (data) { const mapped = data.map(mapResult); localStorage.setItem("winzo_results", JSON.stringify(mapped)); return mapped; }
+  if (data) { const mapped = data.map(mapResult); _safeLocalSet("winzo_results", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_results") || "[]"); } catch(e) { return []; }
 }
 
@@ -94,7 +98,7 @@ function getLiveDeposits()   { try { return JSON.parse(localStorage.getItem("win
 function getLiveWithdrawals(){ try { return JSON.parse(localStorage.getItem("winzo_withdraws") || "[]"); } catch(e) { return []; } }
 function getLiveBlacklist()  { try { return JSON.parse(localStorage.getItem("winzo_blacklist") || "[]"); } catch(e) { return []; } }
 function saveLiveBlacklist(arr) {
-  localStorage.setItem("winzo_blacklist", JSON.stringify(arr));
+  _safeLocalSet("winzo_blacklist", arr);
   if (!window.WINZO_SB) return;
   // Full replace: delete all then insert
   window.WINZO_SB.from("blacklist").delete().neq("id","__none__").then(function() {
@@ -108,13 +112,13 @@ async function getLiveBlacklistAsync() {
   const data = await sbFetch("blacklist", "created_at");
   if (data) {
     const mapped = data.map(function(r){ return { id:r.id, name:r.name, reason:r.reason, added:r.created_at }; });
-    localStorage.setItem("winzo_blacklist", JSON.stringify(mapped));
+    _safeLocalSet("winzo_blacklist", mapped);
     return mapped;
   }
   return getLiveBlacklist();
 }
 function saveLiveUsers(arr) {
-  localStorage.setItem("winzo_users", JSON.stringify(arr));
+  _safeLocalSet("winzo_users", arr);
   if (!window.WINZO_SB) return;
   // Only push to Supabase if an authenticated admin session exists
   window.WINZO_SB.auth.getSession().then(function({ data: { session } }) {
@@ -196,13 +200,13 @@ async function getLiveTournamentsAsync() {
   const data = await sbFetch("tournaments", "created_at");
   if (data && data.length) {
     const mapped = data.map(function(r){ return { id:r.id, name:r.name, game:r.game, entry:r.entry, prize:r.prize, players:r.players, status:r.status, start:r.start_time }; });
-    localStorage.setItem("winzo_tournaments", JSON.stringify(mapped));
+    _safeLocalSet("winzo_tournaments", mapped);
     return mapped;
   }
   return getLiveTournaments();
 }
 function saveLiveTournaments(arr) {
-  localStorage.setItem("winzo_tournaments", JSON.stringify(arr));
+  _safeLocalSet("winzo_tournaments", arr);
   if (!window.WINZO_SB) return;
   window.WINZO_SB.from("tournaments").upsert(arr.map(function(t){
     return { id:t.id, name:t.name, game:t.game, entry:t.entry||0, prize:t.prize||0, players:t.players||"0/0", status:t.status||"upcoming", start_time:t.start||null };

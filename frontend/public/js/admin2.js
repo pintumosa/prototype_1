@@ -119,7 +119,7 @@ window.approveWithdrawRequest = function(id) {
     saveLiveUsers(users);
     if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", u.uid).then(function(){});
   }
-  localStorage.setItem("winzo_withdraws", JSON.stringify(wds));
+  try { localStorage.setItem("winzo_withdraws", JSON.stringify(wds)); } catch(e) {}
   if (window.WINZO_SB) window.WINZO_SB.from("withdraws").update({ status: "approved" }).eq("id", id).then(function(){});
   showToast("Withdrawal approved & ₹" + w.amount + " deducted from " + w.user, "success");
   window.syncAndReload("recent-withdrawals", "Recent Withdrawal Requests");
@@ -130,7 +130,7 @@ window.rejectWithdrawRequest = function(id) {
   var w = wds.find(function(x){ return x.id === id; });
   if (!w) return;
   w.status = "rejected";
-  localStorage.setItem("winzo_withdraws", JSON.stringify(wds));
+  try { localStorage.setItem("winzo_withdraws", JSON.stringify(wds)); } catch(e) {}
   if (window.WINZO_SB) window.WINZO_SB.from("withdraws").update({ status: "rejected" }).eq("id", id).then(function(){});
   showToast("Withdrawal rejected.", "error");
   window.syncAndReload("recent-withdrawals", "Recent Withdrawal Requests");
@@ -144,7 +144,7 @@ window.approveDepositRequest = function(id) {
   var users = getLiveUsers();
   var u = users.find(function(x){ return x.fullName === d.user || x.phone === d.userPhone || x.email === d.userEmail; });
   if (u) { u.chips = (Number(u.chips) || 0) + Number(d.amount); u.wallet = u.chips; saveLiveUsers(users); }
-  localStorage.setItem("winzo_deposits", JSON.stringify(deps));
+  try { localStorage.setItem("winzo_deposits", JSON.stringify(deps)); } catch(e) {}
   if (window.WINZO_SB) {
     window.WINZO_SB.from("deposits").update({ status:"success" }).eq("id", id).then(function(){});
   }
@@ -157,7 +157,7 @@ window.rejectDepositRequest = function(id) {
   var d = deps.find(function(x){ return x.id === id; });
   if (!d) return;
   d.status = "rejected";
-  localStorage.setItem("winzo_deposits", JSON.stringify(deps));
+  try { localStorage.setItem("winzo_deposits", JSON.stringify(deps)); } catch(e) {}
   if (window.WINZO_SB) {
     window.WINZO_SB.from("deposits").update({ status:"rejected" }).eq("id", id).then(function(){});
   }
@@ -201,7 +201,7 @@ window.adminChipOp = function (uid, direction) {
     status: "success",
     time: new Date().toLocaleString("en-IN")
   });
-  localStorage.setItem("winzo_deposits", JSON.stringify(txns));
+  try { localStorage.setItem("winzo_deposits", JSON.stringify(txns)); } catch(e) {}
   var el = document.getElementById("chips-" + uid);
   if (el) el.textContent = u.chips.toLocaleString("en-IN");
   showToast((direction > 0 ? "Added " : "Subtracted ") + amt + " chips " + (direction > 0 ? "to " : "from ") + (u.fullName || u.name) + ". Balance: " + u.chips, "success");
@@ -221,7 +221,7 @@ window.adminDeclareWinner = async function(resultId, winnerUid, winnerName, priz
   // Mark result as approved
   var results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
   results = results.map(function(r){ return r.id === resultId ? Object.assign({}, r, { status: "approved" }) : r; });
-  localStorage.setItem("winzo_results", JSON.stringify(results));
+  try { localStorage.setItem("winzo_results", JSON.stringify(results)); } catch(e) {}
   if (window.WINZO_SB) {
     try { await window.WINZO_SB.from("results").update({ status: "approved" }).eq("id", resultId); } catch(e) {}
   }
@@ -247,7 +247,7 @@ window.adminCancelResult = async function(resultId, uid1, uid2, entryAmount) {
   // Mark result as rejected
   var results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
   results = results.map(function(r){ return r.id === resultId ? Object.assign({}, r, { status: "rejected" }) : r; });
-  localStorage.setItem("winzo_results", JSON.stringify(results));
+  try { localStorage.setItem("winzo_results", JSON.stringify(results)); } catch(e) {}
   if (window.WINZO_SB) {
     try { await window.WINZO_SB.from("results").update({ status: "rejected" }).eq("id", resultId); } catch(e) {}
   }
@@ -278,7 +278,7 @@ window.adminDeleteSet = async function (id) {
   }
 
   // Delete from localStorage
-  localStorage.setItem("winzo_sets_global", JSON.stringify(sets.filter(function(x){ return x.id !== id; })));
+  try { localStorage.setItem("winzo_sets_global", JSON.stringify(sets.filter(function(x){ return x.id !== id; }))); } catch(e) {}
 
   // Delete from Supabase
   if (window.WINZO_SB) {
@@ -373,7 +373,7 @@ window.adminManualDeposit = function () {
   saveLiveUsers(users);
   var deps = getLiveDeposits();
   deps.push({ id: "d_" + Date.now(), user: u.fullName || u.name, amount: amt, method: "Admin", status: "success", time: new Date().toLocaleString("en-IN") });
-  localStorage.setItem("winzo_deposits", JSON.stringify(deps));
+  try { localStorage.setItem("winzo_deposits", JSON.stringify(deps)); } catch(e) {}
   showToast("₹" + amt.toLocaleString("en-IN") + " added to " + (u.fullName || u.name), "success");
 };
 
@@ -389,7 +389,7 @@ window.adminManualWithdraw = function () {
   saveLiveUsers(users);
   var wds = getLiveWithdrawals();
   wds.push({ id: "w_" + Date.now(), user: u.fullName || u.name, amount: amt, method: "Admin", status: "approved", time: new Date().toLocaleString("en-IN") });
-  localStorage.setItem("winzo_withdraws", JSON.stringify(wds));
+  try { localStorage.setItem("winzo_withdraws", JSON.stringify(wds)); } catch(e) {}
   showToast("₹" + amt.toLocaleString("en-IN") + " withdrawn from " + (u.fullName || u.name), "success");
 };
 
@@ -503,7 +503,7 @@ window.adminAddGame = function () {
   if (!name) return showToast("Game name is required.", "error");
   var games = JSON.parse(localStorage.getItem("winzo_games") || "null") || STATIC.games.slice();
   games.push({ id: "g_" + Date.now(), name, type, entry, prize, players, status, created: new Date().toISOString().slice(0,10) });
-  localStorage.setItem("winzo_games", JSON.stringify(games));
+  try { localStorage.setItem("winzo_games", JSON.stringify(games)); } catch(e) {}
   showToast("Game \"" + name + "\" added and live on homepage.", "success");
   window.loadPanel("view-all-games", "View All Games");
 };
@@ -511,7 +511,7 @@ window.adminAddGame = function () {
 window.adminDeleteGame = function (id) {
   if (!confirm("Remove this game?")) return;
   var games = JSON.parse(localStorage.getItem("winzo_games") || "null") || STATIC.games.slice();
-  localStorage.setItem("winzo_games", JSON.stringify(games.filter(function(g){ return g.id !== id; })));
+  try { localStorage.setItem("winzo_games", JSON.stringify(games.filter(function(g){ return g.id !== id; }))); } catch(e) {}
   showToast("Game removed.", "success");
   window.loadPanel("view-all-games", "View All Games");
 };
@@ -546,6 +546,17 @@ window.showAddBlacklist = function () {
 (function () {
   var _seenIds = JSON.parse(sessionStorage.getItem("winzo_notif_seen") || "[]");
   var _notifs = [];
+  var _errorNotifs = [];
+
+  // Global: call this from anywhere to push an error into admin notifications
+  window.wzReportError = function(msg) {
+    var id = "err_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    _errorNotifs.push({ id: id, type: "error", msg: String(msg), time: new Date().toISOString() });
+    // Keep only last 20 errors
+    if (_errorNotifs.length > 20) _errorNotifs.shift();
+    var unseen = _notifs.concat(_errorNotifs).filter(function(n){ return !_seenIds.includes(n.id); });
+    updateNotifUI(unseen, _notifs.length);
+  };
 
   function markSeen(id) {
     if (!_seenIds.includes(id)) {
@@ -568,7 +579,8 @@ window.showAddBlacklist = function () {
     });
 
     _notifs = newNotifs;
-    var unseen = newNotifs.filter(function(n){ return !_seenIds.includes(n.id); });
+    var allNotifs = _notifs.concat(_errorNotifs);
+    var unseen = allNotifs.filter(function(n){ return !_seenIds.includes(n.id); });
     updateNotifUI(unseen, newNotifs.length);
   }
 
@@ -590,15 +602,21 @@ window.showAddBlacklist = function () {
     dot.style.display = totalPending > 0 ? "inline-block" : "none";
 
     // Notification list
-    if (_notifs.length === 0) {
+    var allNotifs = _notifs.concat(_errorNotifs);
+    if (allNotifs.length === 0) {
       list.innerHTML = '<div class="a2-notif-empty">No pending requests</div>';
     } else {
-      list.innerHTML = _notifs.map(function(n) {
+      list.innerHTML = allNotifs.map(function(n) {
         var isSeen = _seenIds.includes(n.id);
-        return '<div class="a2-notif-item' + (isSeen ? " seen" : "") + '" onclick="handleNotifClick(\'' + n.id + '\',\'' + n.panel + '\',\'' + n.label + '\')">'
-          + '<span class="a2-notif-icon ' + (n.type === "deposit" ? "dep" : "wd") + '">'
-          + (n.type === "deposit" ? '<i class="ph ph-arrow-down-left"></i>' : '<i class="ph ph-arrow-up-right"></i>')
-          + '</span>'
+        var iconClass = n.type === "deposit" ? "dep" : n.type === "error" ? "err" : "wd";
+        var icon = n.type === "deposit" ? '<i class="ph ph-arrow-down-left"></i>'
+                 : n.type === "error"   ? '<i class="ph ph-warning"></i>'
+                 :                        '<i class="ph ph-arrow-up-right"></i>';
+        var clickAttr = n.type === "error"
+          ? 'onclick="handleNotifClick(\'' + n.id + '\',\'\',\'\')"'
+          : 'onclick="handleNotifClick(\'' + n.id + '\',\'' + n.panel + '\',\'' + n.label + '\')"';
+        return '<div class="a2-notif-item' + (isSeen ? " seen" : "") + '" ' + clickAttr + '>'
+          + '<span class="a2-notif-icon ' + iconClass + '">' + icon + '</span>'
           + '<div class="a2-notif-text"><div class="a2-notif-msg">' + n.msg + '</div>'
           + '<div class="a2-notif-time">' + (n.time ? new Date(n.time).toLocaleString("en-IN") : "") + '</div></div>'
           + '</div>';
@@ -609,13 +627,13 @@ window.showAddBlacklist = function () {
   window.handleNotifClick = function(id, panel, label) {
     markSeen(id);
     document.getElementById("notif-dropdown").style.display = "none";
-    var unseen = _notifs.filter(function(n){ return !_seenIds.includes(n.id); });
+    var allNotifs = _notifs.concat(_errorNotifs);
+    var unseen = allNotifs.filter(function(n){ return !_seenIds.includes(n.id); });
     var badge = document.getElementById("notif-badge");
     if (badge) { badge.textContent = unseen.length; badge.style.display = unseen.length > 0 ? "flex" : "none"; }
-    // Mark item as seen in UI
     var items = document.querySelectorAll(".a2-notif-item");
     items.forEach(function(el) { el.classList.add("seen"); });
-    window.syncAndReload(panel, label);
+    if (panel) window.syncAndReload(panel, label);
   };
 
   window.toggleNotifDropdown = function() {
@@ -624,11 +642,11 @@ window.showAddBlacklist = function () {
     var isOpen = dd.style.display !== "none";
     dd.style.display = isOpen ? "none" : "block";
     if (!isOpen) {
-      // Mark all as seen when opening
-      _notifs.forEach(function(n){ markSeen(n.id); });
+      var allNotifs = _notifs.concat(_errorNotifs);
+      allNotifs.forEach(function(n){ markSeen(n.id); });
       var badge = document.getElementById("notif-badge");
       if (badge) badge.style.display = "none";
-      updateNotifUI([], _notifs.filter(function(n){ return n.type; }).length);
+      updateNotifUI([], _notifs.length);
     }
   };
 
@@ -769,7 +787,7 @@ window.showAddBlacklist = function () {
     // Remove stale from localStorage
     var staleIds = stale.map(function(s){ return s.id; });
     var remaining = sets.filter(function(s){ return !staleIds.includes(s.id); });
-    localStorage.setItem("winzo_sets_global", JSON.stringify(remaining));
+    try { localStorage.setItem("winzo_sets_global", JSON.stringify(remaining)); } catch(e) {}
 
     // Remove from Supabase
     if (window.WINZO_SB) {

@@ -114,13 +114,13 @@ async function getLiveGamesAsync() {
   const data = await sbFetch("games", "created_at");
   if (data && data.length) {
     const mapped = data.map(function(r){ return { id:r.id, name:r.name, type:r.type, entry:r.entry, prize:r.prize, players:r.players, status:r.status, created:(r.created_at||"").slice(0,10) }; });
-    localStorage.setItem("winzo_games", JSON.stringify(mapped));
+    try { localStorage.setItem("winzo_games", JSON.stringify(mapped)); } catch(e) {}
     return mapped;
   }
   return getLiveGames();
 }
 function saveLiveGames(arr) {
-  localStorage.setItem("winzo_games", JSON.stringify(arr));
+  try { localStorage.setItem("winzo_games", JSON.stringify(arr)); } catch(e) {}
   if (!window.WINZO_SB) return;
   window.WINZO_SB.from("games").upsert(arr.map(function(g){
     return { id:g.id, name:g.name, type:g.type||"regular", entry:g.entry||0, prize:g.prize||0, players:g.players||2, status:g.status||"active" };

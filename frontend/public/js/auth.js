@@ -8,19 +8,37 @@ const WZ_KEYS = {
   SESSION: "winzo_session"
 };
 
+// One-time cleanup: remove large cached arrays that bloat localStorage when Supabase is available
+(function wzPurgeStaleCache() {
+  if (!window.WINZO_SB) return;
+  ["winzo_users","winzo_sets_global","winzo_deposits","winzo_withdraws",
+   "winzo_reports","winzo_results","winzo_tournaments","winzo_games"].forEach(function(k) {
+    localStorage.removeItem(k);
+  });
+})();
+
 // In-memory caches to avoid repeated localStorage parses
 let _sessionCache = undefined;
 let _usersCache = null;
 
 function wzGetUsers() {
   if (_usersCache !== null) return _usersCache;
-  try { _usersCache = JSON.parse(localStorage.getItem(WZ_KEYS.USERS) || "[]"); }
-  catch { _usersCache = []; }
+  // Only read from localStorage if Supabase is not available (pure offline fallback)
+  if (!window.WINZO_SB) {
+    try { _usersCache = JSON.parse(localStorage.getItem(WZ_KEYS.USERS) || "[]"); }
+    catch { _usersCache = []; }
+  } else {
+    _usersCache = [];
+  }
   return _usersCache;
 }
 function wzSaveUsers(users) {
   _usersCache = users;
-  localStorage.setItem(WZ_KEYS.USERS, JSON.stringify(users));
+  // Only persist to localStorage when Supabase is unavailable to avoid quota errors
+  if (!window.WINZO_SB) {
+    try { localStorage.setItem(WZ_KEYS.USERS, JSON.stringify(users)); }
+    catch (e) { if (window.wzReportError) wzReportError("localStorage quota exceeded (users cache): " + e.message); }
+  }
 }
 function wzSetSession(user) {
   _sessionCache = user;
@@ -109,7 +127,7 @@ async function wzUploadKycFile(file, uid, token) {
     try {
       const { url, key } = await wzUploadToStorj(file, "kyc/" + uid, token);
       return { kycUrl: url, kycKey: key };
-    } catch (e) { console.warn("Storj KYC upload failed:", e.message); }
+    } catch (e) { if (window.wzReportError) wzReportError("Storj KYC upload failed: " + e.message); else console.warn("Storj KYC upload failed: " + e.message); }
   }
   // Fallback: base64
   const dataUrl = await new Promise((resolve, reject) => {
@@ -199,7 +217,7 @@ async function wzSignup(payload) {
         kyc_verified: false,
         chips: 0, created_at: new Date().toISOString()
       });
-    } catch(e) { console.warn("Supabase DB insert failed:", e.message); }
+    } catch(e) { if (window.wzReportError) wzReportError("Supabase DB insert failed: " + e.message); else console.warn("Supabase DB insert failed: " + e.message); }
   }
 
   const users = wzGetUsers();
@@ -247,7 +265,7 @@ async function wzLogin(identifier, password) {
       return merged;
     } catch (e) {
       // Fall through to localStorage
-      console.warn("Supabase login failed, trying local:", e.message);
+      if (window.wzReportError) wzReportError("Supabase login failed, trying local: " + e.message); else console.warn("Supabase login failed, trying local: " + e.message);
     }
   }
 
@@ -318,7 +336,7 @@ async function wzLoadSettingsFromSupabase() {
     const s = {};
     data.forEach(function(r){ s[r.key] = r.value; });
     localStorage.setItem(WZ_SETTINGS_KEY, JSON.stringify(s));
-  } catch(e) { console.warn("Settings load failed:", e.message); }
+  } catch(e) { if (window.wzReportError) wzReportError("Settings load failed: " + e.message); else console.warn("Settings load failed: " + e.message); }
 }
 function wzSaveSettings(patch) {
   const cur = wzGetSettings();
@@ -360,7 +378,7 @@ async function wzGetSetsAsync() {
         localStorage.setItem(WZ_SETS_KEY, JSON.stringify(merged));
         return merged;
       }
-    } catch(e) { console.warn("Supabase sets fetch failed:", e.message); }
+    } catch(e) { if (window.wzReportError) wzReportError("Supabase sets fetch failed: " + e.message); else console.warn("Supabase sets fetch failed: " + e.message); }
   }
   try { return JSON.parse(localStorage.getItem(WZ_SETS_KEY) || "[]"); } catch { return []; }
 }
@@ -374,7 +392,7 @@ async function wzSaveSetsAsync(arr) {
   try {
     const rows = arr.map(s => ({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, at:s.at }));
     await window.WINZO_SB.from("challenges").upsert(rows);
-  } catch(e) { console.warn("Supabase sets save failed:", e.message); }
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase sets save failed: " + e.message); else console.warn("Supabase sets save failed: " + e.message); }
 }
 function wzSaveSets(arr) {
   localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
@@ -384,7 +402,7 @@ async function wzDeleteSet(id) {
   const arr = (await wzGetSetsAsync()).filter(s => s.id !== id);
   localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
   if (!window.WINZO_SB) return;
-  try { await window.WINZO_SB.from("challenges").delete().eq("id", id); } catch(e) { console.warn("Supabase set delete failed:", e.message); }
+  try { await window.WINZO_SB.from("challenges").delete().eq("id", id); } catch(e) { if (window.wzReportError) wzReportError("Supabase set delete failed: " + e.message); else console.warn("Supabase set delete failed: " + e.message); }
 }
 window.WinzoSets = { get: wzGetSets, getAsync: wzGetSetsAsync, save: wzSaveSets, delete: wzDeleteSet,
   saveOne: async function(s) {
@@ -393,7 +411,7 @@ window.WinzoSets = { get: wzGetSets, getAsync: wzGetSetsAsync, save: wzSaveSets,
     if (idx >= 0) arr[idx] = s; else arr.push(s);
     localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
     if (!window.WINZO_SB) return;
-    try { await window.WINZO_SB.from("challenges").upsert({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, at:s.at }); } catch(e) { console.warn("Supabase set saveOne failed:", e.message); }
+    try { await window.WINZO_SB.from("challenges").upsert({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, at:s.at }); } catch(e) { if (window.wzReportError) wzReportError("Supabase set saveOne failed: " + e.message); else console.warn("Supabase set saveOne failed: " + e.message); }
   }
 };
 
@@ -402,7 +420,7 @@ async function wzSaveDepositAsync(dep) {
   if (!window.WINZO_SB) return;
   try {
     await window.WINZO_SB.from("deposits").upsert({ id:dep.id, uid:dep.uid||null, user_name:dep.user, user_phone:dep.userPhone, user_email:dep.userEmail, amount:dep.amount, method:dep.method, txn_id:dep.txnId||null, status:dep.status });
-  } catch(e) { console.warn("Supabase deposit save failed:", e.message); }
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase deposit save failed: " + e.message); else console.warn("Supabase deposit save failed: " + e.message); }
 }
 window.WinzoDeposits = { saveOne: wzSaveDepositAsync };
 
@@ -428,7 +446,7 @@ async function wzSaveResultAsync(res) {
       screenshot_at: res.screenshotAt || null,
       status: res.status
     });
-  } catch(e) { console.warn("Supabase result save failed:", e.message); }
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase result save failed: " + e.message); else console.warn("Supabase result save failed: " + e.message); }
 }
 window.WinzoResults = { saveOne: wzSaveResultAsync };
 
@@ -442,7 +460,7 @@ async function wzSaveReportAsync(rep) {
   if (!window.WINZO_SB) return;
   try {
     await window.WINZO_SB.from("reports").upsert({ id:rep.id, reporter_uid:rep.reporterUid, reporter_name:rep.reporterName, opponent:rep.opponent, details:rep.details, proof_url:rep.proofUrl, status:rep.status });
-  } catch(e) { console.warn("Supabase report save failed:", e.message); }
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase report save failed: " + e.message); else console.warn("Supabase report save failed: " + e.message); }
 }
 window.WinzoReports = { get: wzGetReports, save: wzSaveReports, saveOne: wzSaveReportAsync };
 
@@ -456,6 +474,6 @@ async function wzSaveWithdrawAsync(w) {
   if (!window.WINZO_SB) return;
   try {
     await window.WINZO_SB.from("withdraws").upsert({ id:w.id, uid:w.uid||null, user_name:w.user, user_phone:w.userPhone, user_email:w.userEmail, amount:w.amount, method:w.method, upi_id:w.upiId||null, status:w.status });
-  } catch(e) { console.warn("Supabase withdraw save failed:", e.message); }
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase withdraw save failed: " + e.message); else console.warn("Supabase withdraw save failed: " + e.message); }
 }
 window.WinzoWithdraws = { get: wzGetWithdraws, save: wzSaveWithdraws, saveOne: wzSaveWithdrawAsync };

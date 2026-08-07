@@ -239,6 +239,7 @@
 }
 .a2-notif-icon.dep { background: rgba(34,197,94,0.15); color: #22c55e; }
 .a2-notif-icon.wd  { background: rgba(251,146,60,0.15); color: #fb923c; }
+.a2-notif-icon.err { background: rgba(239,68,68,0.15);  color: #ef4444; }
 .a2-notif-msg { font-size: 13px; color: var(--text-primary); line-height: 1.4; }
 .a2-notif-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
