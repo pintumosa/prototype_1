@@ -45,7 +45,7 @@
         Bonus add karwane ke lie contact kare
         <a id="bonus-phone-link" href="#" class="bonus-phone" data-testid="bonus-phone" target="_blank" rel="noopener">+91 95186-85134</a>
       </p>
-      <button class="btn btn-primary" id="open-upi" data-testid="open-upi-btn" style="margin-top:14px;" onclick="var _bp=(window.WinzoSettings?window.WinzoSettings.get().bonusPhone:'+91 95186-85134');document.getElementById('upi-modal').removeAttribute('hidden');document.getElementById('upi-phone-display').textContent=_bp;document.getElementById('upi-wa-link').href='https://wa.me/'+_bp.replace(/[^0-9]/g,'')">>
+      <button class="btn btn-primary" id="open-upi" data-testid="open-upi-btn" style="margin-top:14px;" onclick="var _s=(window.WinzoSettings?window.WinzoSettings.get():{});var _bp=_s.bonusPhone||'+91 95186-85134';document.getElementById('upi-modal').removeAttribute('hidden');document.getElementById('upi-phone-display').textContent=_bp;document.getElementById('upi-wa-link').href='https://wa.me/'+_bp.replace(/[^0-9]/g,'');var _qr=_s.upiQrUrl||'';var _wrap=document.getElementById('upi-qr-wrap');var _img=document.getElementById('upi-qr-img');var _lbl=document.getElementById('upi-qr-label');if(_qr){_img.src=_qr;_lbl.textContent=(_s.upiId||'');_wrap.style.display='block';}else{_wrap.style.display='none';}">
         <i class="ph-fill ph-qr-code"></i> Pay via UPI &amp; Add Chips
       </button>
     </div>
@@ -60,14 +60,11 @@
         <button class="modal-close" id="close-upi" onclick="document.getElementById('upi-modal').setAttribute('hidden','')"><i class="ph ph-x"></i></button>
       </div>
 
-      <!-- QR / Phone placeholder (add manually later) -->
-      <!--
-      <div style="text-align:center;margin-bottom:20px;">
-        <img src="YOUR_QR_CODE_IMAGE_URL" alt="UPI QR" style="width:200px;height:200px;border-radius:8px;" />
-        <p style="margin-top:8px;color:var(--accent);font-weight:700;">UPI: YOUR_UPI_ID@bank</p>
-        <p style="color:var(--text-secondary);font-size:13px;">Or pay to phone: +91 XXXXXXXXXX</p>
+      <!-- QR Code (loaded from admin settings) -->
+      <div id="upi-qr-wrap" style="text-align:center;margin-bottom:16px;display:none;">
+        <img id="upi-qr-img" src="" alt="UPI QR Code" style="width:200px;height:200px;border-radius:8px;object-fit:contain;background:#111;" />
+        <p id="upi-qr-label" style="margin-top:8px;color:var(--accent);font-weight:700;font-size:14px;"></p>
       </div>
-      -->
 
       <!-- Phone number -->
       <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;">

@@ -176,13 +176,14 @@ PANELS["add-tournament-game"] = function() {
 // ── User Management ───────────────────────────────────────────
 PANELS["view-all-users"] = function() {
   const users = getLiveUsers();
+  const loading = !users.length && window.WINZO_SB;
   return `<div class="a2-panel-head"><h2><i class="ph ph-user-list"></i> All Users</h2></div>
 <div class="a2-search">
   <input type="text" placeholder="Search name, phone or email..." oninput="filterTable(this,'all-users-tbody',1,2,3,4)" />
 </div>
 <div class="a2-table-wrap"><table class="a2-table"><thead><tr><th>#</th><th>User ID</th><th>Name</th><th>Phone</th><th>Email</th><th>KYC</th><th>Chips</th><th>Add / Subtract Chips</th><th>Joined</th><th>Action</th></tr></thead>
 <tbody id="all-users-tbody">
-${users.length ? users.map(function(u,i){return `<tr><td>${i+1}</td><td style="font-family:monospace;font-size:11px;color:var(--text-muted)">${esc(u.uid||"—")}</td><td><strong>${esc(u.fullName||u.name||"—")}</strong></td><td>${esc(u.phone||"—")}</td><td>${esc(u.email||"—")}</td><td id="kyc-badge-${esc(u.uid)}">${statusBadge(u.kycVerified?"verified":"pending")}</td><td style="color:var(--accent);font-weight:700" id="chips-${esc(u.uid)}">${Number(u.chips||u.wallet||0).toLocaleString("en-IN")}</td>
+${loading ? `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)"><i class="ph ph-circle-notch" style="animation:spin 1s linear infinite;margin-right:8px;"></i>Loading users from Supabase…</td></tr>` : users.length ? users.map(function(u,i){return `<tr><td>${i+1}</td><td style="font-family:monospace;font-size:11px;color:var(--text-muted)">${esc(u.uid||"—")}</td><td><strong>${esc(u.fullName||u.name||"—")}</strong></td><td>${esc(u.phone||"—")}</td><td>${esc(u.email||"—")}</td><td id="kyc-badge-${esc(u.uid)}">${statusBadge(u.kycVerified?"verified":"pending")}</td><td style="color:var(--accent);font-weight:700" id="chips-${esc(u.uid)}">${Number(u.chips||u.wallet||0).toLocaleString("en-IN")}</td>
 <td style="white-space:nowrap;display:flex;gap:6px;align-items:center;">
   <input type="number" min="1" placeholder="Amount" id="chipamt-${esc(u.uid)}" style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:#0F0F16;color:#fff;font-size:13px;" />
   <button class="btn btn-primary" style="padding:5px 10px;font-size:12px;" onclick="adminChipOp('${esc(u.uid)}',1)"><i class="ph ph-plus"></i> Add</button>
@@ -344,7 +345,7 @@ PANELS["user-profile"] = function() {
 
   return `<div class="a2-panel-head">
     <h2><i class="ph ph-user-circle"></i> User Profile — ${esc(u.fullName||u.name||"—")}</h2>
-    <button class="btn btn-secondary" style="padding:5px 14px;font-size:12px;" onclick="window.loadPanel('manage-users','Manage Users')"><i class="ph ph-arrow-left"></i> Back</button>
+    <button class="btn btn-secondary" style="padding:5px 14px;font-size:12px;" onclick="window.syncAndReload('view-all-users','View All Users')"><i class="ph ph-arrow-left"></i> Back</button>
   </div>
 
   <!-- Info Cards -->

@@ -46,7 +46,9 @@ function stopLiveRefresh() {
 
 // ── Define globals first so unlock() can call them ───────────
 window.loadPanel = function (key, label) {
-  document.getElementById("topbar-title").textContent = label || key;
+  var titleEl = document.getElementById("topbar-title");
+  titleEl.textContent = label || key;
+  titleEl.dataset.panelKey = key;
   var content = document.getElementById("main-content");
   if (PANELS[key]) {
     content.innerHTML = PANELS[key]();
@@ -169,13 +171,26 @@ window.adminDeleteUser = function (uid) {
   if (!confirm("Delete this user permanently?")) return;
   saveLiveUsers(getLiveUsers().filter(function(u){ return u.uid !== uid; }));
   showToast("User deleted", "success");
-  window.loadPanel("view-all-users", "View All Users");
+  window.syncAndReload("view-all-users", "View All Users");
 };
 
 window.adminViewUserProfile = function (uid) {
   window._adminProfileUid = uid;
-  var u = getLiveUsers().find(function(x){ return x.uid === uid; });
-  window.loadPanel("user-profile", "User Profile — " + (u ? (u.fullName||u.name||uid) : uid));
+  // Show immediately from cache, then refresh with full data (including KYC URLs)
+  var cached = getLiveUsers().find(function(x){ return x.uid === uid; });
+  window.loadPanel("user-profile", "User Profile — " + (cached ? (cached.fullName||cached.name||uid) : uid));
+  getLiveUserFullAsync(uid).then(function(full) {
+    if (!full) return;
+    // Merge full data into cache
+    if (_usersMemCache) {
+      var idx = _usersMemCache.findIndex(function(x){ return x.uid === uid; });
+      if (idx !== -1) _usersMemCache[idx] = full; else _usersMemCache.push(full);
+    }
+    var titleEl = document.getElementById("topbar-title");
+    if (titleEl && titleEl.dataset.panelKey === "user-profile") {
+      window.loadPanel("user-profile", "User Profile — " + (full.fullName||full.name||uid));
+    }
+  });
 };
 
 window.adminChipOp = function (uid, direction) {
@@ -350,14 +365,35 @@ window.adminApproveKyc = function (uid) {
   window.loadPanel("review-kyc", "Review KYC Users");
 };
 
-window.adminSaveSettings = function () {
+window.adminPreviewQr = function(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var preview = document.getElementById("qr-preview");
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = "block";
+};
+
+window.adminSaveSettings = async function () {
   var bonusPhone = document.getElementById("set-bonus-phone").value.trim();
   var adminUser  = document.getElementById("set-admin-user").value.trim();
   var adminPass  = document.getElementById("set-admin-pass").value.trim();
   var upiId      = document.getElementById("set-upi-id").value.trim();
   var upiName    = document.getElementById("set-upi-name").value.trim();
+  var upiQrUrl   = document.getElementById("set-upi-qr-url").value.trim();
   if (!bonusPhone || !adminUser || !adminPass) return showToast("Bonus phone, username and password are required.", "error");
-  if (window.WinzoSettings) window.WinzoSettings.save({ bonusPhone, adminUser, adminPass, upiId, upiName });
+  var fileInput = document.getElementById("set-upi-qr-file");
+  if (fileInput && fileInput.files[0]) {
+    try {
+      showToast("Uploading QR image…", "info");
+      var session = await window.WINZO_SB.auth.getSession();
+      var token = session?.data?.session?.access_token;
+      var { url } = await window.wzUploadToStorj(fileInput.files[0], "settings", token);
+      upiQrUrl = url;
+    } catch(e) {
+      return showToast("QR upload failed: " + e.message, "error");
+    }
+  }
+  if (window.WinzoSettings) window.WinzoSettings.save({ bonusPhone, adminUser, adminPass, upiId, upiName, upiQrUrl });
   showToast("Settings saved!", "success");
 };
 
@@ -490,7 +526,7 @@ window.adminAddUser = function () {
   users.push({ uid: "u_" + Date.now(), fullName: name, phone: phone, email: email, kycType: kyc, kycVerified: false, chips: chips, wallet: chips, createdAt: new Date().toISOString() });
   saveLiveUsers(users);
   showToast("User \"" + name + "\" created", "success");
-  window.loadPanel("view-all-users", "View All Users");
+  window.syncAndReload("view-all-users", "View All Users");
 };
 
 window.adminAddGame = function () {

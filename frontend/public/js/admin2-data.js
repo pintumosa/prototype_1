@@ -3,16 +3,19 @@
 // Reads live from Supabase; falls back to localStorage.
 // ============================================================
 
-async function sbFetch(table, order) {
+async function sbFetch(table, order, columns) {
   if (!window.WINZO_SB) return null;
   try {
-    let q = window.WINZO_SB.from(table).select("*");
+    let q = window.WINZO_SB.from(table).select(columns || "*");
     if (order) q = q.order(order, { ascending: false });
     const { data, error } = await q;
     if (error) throw error;
     return data;
   } catch(e) { console.warn("Supabase fetch failed [" + table + "]:", e.message); return null; }
 }
+
+// Lean column list for user list views (excludes heavy KYC image data)
+var USER_LIST_COLS = "uid,full_name,phone,email,kyc_type,kyc_verified,kyc_rejected,chips,created_at";
 
 // ── Map Supabase rows → app shape ─────────────────────────────
 function mapUser(r) {
@@ -54,14 +57,25 @@ function mapResult(r) {
 }
 
 // ── Live readers (Supabase-first, localStorage fallback) ──────
+var _usersMemCache = null; // in-memory cache to avoid localStorage quota issues (base64 KYC images are large)
+
 function _safeLocalSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); }
   catch (e) { if (window.wzReportError) wzReportError("localStorage quota exceeded (" + key + "): " + e.message); }
 }
 async function getLiveUsersAsync() {
-  const data = await sbFetch("users", "created_at");
-  if (data) { const mapped = data.map(mapUser); _safeLocalSet("winzo_users", mapped); return mapped; }
+  const data = await sbFetch("users", "created_at", USER_LIST_COLS);
+  if (data) { const mapped = data.map(mapUser); _usersMemCache = mapped; return mapped; }
+  if (_usersMemCache) return _usersMemCache;
   try { return JSON.parse(localStorage.getItem("winzo_users") || "[]"); } catch(e) { return []; }
+}
+async function getLiveUserFullAsync(uid) {
+  if (!window.WINZO_SB) return null;
+  try {
+    const { data, error } = await window.WINZO_SB.from("users").select("*").eq("uid", uid).single();
+    if (error) throw error;
+    return mapUser(data);
+  } catch(e) { return _usersMemCache ? _usersMemCache.find(function(u){ return u.uid === uid; }) || null : null; }
 }
 async function getLiveSetsAsync() {
   const data = await sbFetch("challenges", "at");
@@ -90,7 +104,7 @@ async function getLiveResultsAsync() {
 }
 
 // Sync wrappers — panels call these, await result, then re-render
-function getLiveUsers()      { try { return JSON.parse(localStorage.getItem("winzo_users") || "[]"); } catch(e) { return []; } }
+function getLiveUsers()      { if (_usersMemCache) return _usersMemCache; try { return JSON.parse(localStorage.getItem("winzo_users") || "[]"); } catch(e) { return []; } }
 function getLiveSets()       { try { return JSON.parse(localStorage.getItem("winzo_sets_global") || "[]"); } catch(e) { return []; } }
 function getLiveReports()    { try { return JSON.parse(localStorage.getItem("winzo_reports") || "[]"); } catch(e) { return []; } }
 function getLiveResults()    { try { return JSON.parse(localStorage.getItem("winzo_results") || "[]"); } catch(e) { return []; } }
@@ -118,7 +132,7 @@ async function getLiveBlacklistAsync() {
   return getLiveBlacklist();
 }
 function saveLiveUsers(arr) {
-  _safeLocalSet("winzo_users", arr);
+  _usersMemCache = arr; // keep in memory — base64 KYC images blow localStorage quota
   if (!window.WINZO_SB) return;
   // Only push to Supabase if an authenticated admin session exists
   window.WINZO_SB.auth.getSession().then(function({ data: { session } }) {
@@ -164,8 +178,9 @@ window.syncAndReload = function(panelKey, panelLabel) {
   };
   if (loaders[panelKey]) {
     loaders[panelKey]().then(function() {
-      // Only re-render if user is still on the same panel
-      if (document.getElementById("topbar-title").textContent === (panelLabel || panelKey)) {
+      // Re-render only if user is still on the same panel (compare by key stored on element)
+      var titleEl = document.getElementById("topbar-title");
+      if (titleEl && titleEl.dataset.panelKey === panelKey) {
         window.loadPanel(panelKey, panelLabel);
       }
     }).catch(function(){});
