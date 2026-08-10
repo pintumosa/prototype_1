@@ -220,16 +220,14 @@
           const cBack  = backFile ? await compress(backFile) : null;
 
           if (window.WINZO_SB) {
-            const frontPath = `kyc/${session.uid}/front_${Date.now()}`;
-            const { error: upErr } = await window.WINZO_SB.storage.from("kyc-docs").upload(frontPath, cFront, { upsert: true });
-            if (upErr) throw new Error(upErr.message);
-            kycKey = frontPath;
+            const { data: { session: sbSession } } = await window.WINZO_SB.auth.getSession();
+            const token = sbSession?.access_token;
+            const frontResult = await window.wzUploadToStorj(cFront, "kyc/" + session.uid, token);
+            kycUrl = frontResult.url; kycKey = frontResult.key;
 
             if (cBack) {
-              const backPath = `kyc/${session.uid}/back_${Date.now()}`;
-              const { error: upErr2 } = await window.WINZO_SB.storage.from("kyc-docs").upload(backPath, cBack, { upsert: true });
-              if (upErr2) throw new Error(upErr2.message);
-              kycBackKey = backPath;
+              const backResult = await window.wzUploadToStorj(cBack, "kyc/" + session.uid, token);
+              kycBackUrl = backResult.url; kycBackKey = backResult.key;
             }
 
             await window.WINZO_SB.from("users").update({
