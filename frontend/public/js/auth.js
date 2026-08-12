@@ -177,6 +177,13 @@ async function wzSignup(payload) {
           body: JSON.stringify({ uid })
         });
       } catch(e) { console.warn("Auto-confirm failed:", e.message); }
+      // Get a real session token after confirmation so DB insert passes RLS
+      if (!sbToken) {
+        try {
+          const { data: signInData } = await window.WINZO_SB.auth.signInWithPassword({ email: payload.email, password: payload.password });
+          sbToken = signInData?.session?.access_token || null;
+        } catch(e) { console.warn("Post-confirm sign-in failed:", e.message); }
+      }
     } catch (e) {
       throw new Error(e.message);
     }
@@ -215,7 +222,10 @@ async function wzSignup(payload) {
   // ── Supabase DB ──
   if (window.WINZO_SB) {
     try {
-      await window.WINZO_SB.from("users").insert({
+      const sbClient = sbToken
+        ? window.supabase.createClient(window.WINZO_ENV.SUPABASE_URL, window.WINZO_ENV.SUPABASE_ANON, { global: { headers: { Authorization: "Bearer " + sbToken } } })
+        : window.WINZO_SB;
+      await sbClient.from("users").insert({
         uid, full_name: payload.fullName, phone: payload.phone,
         email: payload.email, kyc_type: payload.kycType,
         aadhaar_number: payload.aadhaarNumber || null,
