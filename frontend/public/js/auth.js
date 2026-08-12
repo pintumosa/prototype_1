@@ -128,8 +128,10 @@ async function wzUploadKycFile(file, uid, token) {
       const { url, key } = await wzUploadToStorj(file, "kyc/" + uid, token);
       return { kycUrl: url, kycKey: key };
     } catch (e) { if (window.wzReportError) wzReportError("Storj KYC upload failed: " + e.message); else console.warn("Storj KYC upload failed: " + e.message); }
+    // When Supabase is active, skip base64 fallback to avoid localStorage quota errors
+    return { kycUrl: null, kycKey: null };
   }
-  // Fallback: base64
+  // Fallback: base64 (only when Supabase is not available)
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
