@@ -56,11 +56,11 @@ serve(async (req) => {
     { expiresIn: 300 }
   );
 
-  // Presigned GET URL valid for 7 days — used as the stored public URL
+  // Presigned GET URL valid for 1 year
   const publicUrl = await getSignedUrl(
     s3,
     new GetObjectCommand({ Bucket: Deno.env.get("STORJ_BUCKET")!, Key: key }),
-    { expiresIn: 604800 }
+    { expiresIn: 31536000 }
   );
 
   return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {
