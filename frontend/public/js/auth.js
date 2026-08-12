@@ -195,12 +195,17 @@ async function wzSignup(payload) {
     } catch(e) { console.error("[WinzoAuth] auto-confirm edge fn failed:", e.message); }
   }
 
-  // ── Step 2: Always sign in fresh to get a valid token for uploads ──
+  // ── Step 2: Sign in fresh after confirm — retry with backoff so the
+  //    email_confirm flag has time to propagate in Supabase Auth ──
   if (window.WINZO_SB) {
-    try {
-      const { data: signInData } = await window.WINZO_SB.auth.signInWithPassword({ email: payload.email, password: payload.password });
-      if (signInData?.session?.access_token) sbToken = signInData.session.access_token;
-    } catch(e) { console.warn("Post-confirm sign-in failed:", e.message); }
+    for (const delay of [600, 1200, 2000]) {
+      await new Promise(r => setTimeout(r, delay));
+      try {
+        const { data: signInData, error: signInErr } = await window.WINZO_SB.auth.signInWithPassword({ email: payload.email, password: payload.password });
+        if (signInData?.session?.access_token) { sbToken = signInData.session.access_token; break; }
+        if (signInErr && !signInErr.message.toLowerCase().includes("not confirmed")) break;
+      } catch(e) { console.warn("Post-confirm sign-in attempt failed:", e.message); }
+    }
   }
 
   // ── Step 3: Upload KYC files ──
@@ -256,6 +261,11 @@ async function wzSignup(payload) {
   users.push(user);
   wzSaveUsers(users);
   wzSetSession({ ...user, password: undefined });
+  // Persist Supabase session so dashboard auth check passes immediately
+  if (window.WINZO_SB && sbToken) {
+    const { data: sbSession } = await window.WINZO_SB.auth.getSession();
+    if (sbSession?.session) localStorage.setItem("winzo_sb_session", JSON.stringify(sbSession.session));
+  }
   return user;
 }
 
