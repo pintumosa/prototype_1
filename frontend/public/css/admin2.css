@@ -440,6 +440,7 @@
   }
   .a2-sidebar.open { transform: translateX(0); box-shadow: 4px 0 30px rgba(0,0,0,0.5); }
   .a2-menu-toggle { display: flex; }
+  .a2-main { width: 100%; }
   .a2-content { padding: 20px 16px; }
 }
 

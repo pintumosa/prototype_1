@@ -867,12 +867,19 @@ window.showAddBlacklist = function () {
       document.querySelectorAll(".a2-nav-child").forEach(function (b) { b.classList.remove("active"); });
       btn.classList.add("active");
       window.syncAndReload(btn.dataset.panel, btn.textContent.trim());
-      if (window.innerWidth <= 900) document.getElementById("sidebar").classList.remove("open");
+      if (window.innerWidth <= 900) {
+        document.getElementById("sidebar").classList.remove("open");
+        document.getElementById("sidebar-overlay").style.display = "none";
+      }
     });
   });
 
   document.getElementById("menu-toggle").addEventListener("click", function () {
-    document.getElementById("sidebar").classList.toggle("open");
+    const open = document.getElementById("sidebar").classList.toggle("open");
+    document.getElementById("sidebar-overlay").style.display = open ? "block" : "none";
+  });
+  document.getElementById("sidebar-close").addEventListener("click", function () {
+    document.getElementById("sidebar-overlay").style.display = "none";
   });
 })();
 
