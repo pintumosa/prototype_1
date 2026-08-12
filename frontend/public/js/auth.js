@@ -175,13 +175,13 @@ async function wzSignup(payload) {
   }
 
   const kycResult = payload.kycFile
-    ? await wzUploadKycFile(await compressImage(payload.kycFile, 1600, 0.82), uid, sbToken)
+    ? await wzUploadKycFile(await compressImage(payload.kycFile, 1200, 0.75), uid, sbToken)
     : { kycUrl: null, kycKey: null };
   const kycBackResult = payload.kycBackFile
-    ? await wzUploadKycFile(await compressImage(payload.kycBackFile, 1600, 0.82), uid, sbToken)
+    ? await wzUploadKycFile(await compressImage(payload.kycBackFile, 1200, 0.75), uid, sbToken)
     : { kycUrl: null, kycKey: null };
   const panResult = payload.panFile
-    ? await wzUploadKycFile(await compressImage(payload.panFile, 1600, 0.82), uid, sbToken)
+    ? await wzUploadKycFile(await compressImage(payload.panFile, 1200, 0.75), uid, sbToken)
     : { kycUrl: null, kycKey: null };
 
   const user = {
