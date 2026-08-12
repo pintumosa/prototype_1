@@ -56,7 +56,7 @@ serve(async (req) => {
     { expiresIn: 300 }
   );
 
-  const publicUrl = `${Deno.env.get("STORJ_PUBLIC_BASE")!}/${key}`;
+  const publicUrl = `${Deno.env.get("STORJ_PUBLIC_BASE") || `${Deno.env.get("STORJ_ENDPOINT")}/${Deno.env.get("STORJ_BUCKET")}`}/${key}`;
 
   return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {
     headers: { ...CORS, "Content-Type": "application/json" },
