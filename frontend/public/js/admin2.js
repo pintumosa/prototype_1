@@ -131,7 +131,7 @@ window.adminViewKyc = function (key) {
 window.adminShowDocModal = function(url) {
   var existing = document.getElementById("kyc-doc-modal");
   if (existing) existing.remove();
-  var isImg = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url) || url.startsWith("data:image") || /link\.storjshare\.io/i.test(url);
+  var isImg = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url) || url.startsWith("data:image") || /storjshare\.io/i.test(url);
   var content = isImg
     ? `<img src="${url}" style="max-width:100%;max-height:75vh;border-radius:8px;display:block;margin:0 auto;" />`
     : `<iframe src="${url}" style="width:100%;height:75vh;border:none;border-radius:8px;"></iframe>`;
