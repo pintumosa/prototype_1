@@ -169,6 +169,14 @@ async function wzSignup(payload) {
       if (error) throw new Error(error.message);
       if (data?.user?.id) uid = data.user.id;
       sbToken = data?.session?.access_token || null;
+      // Auto-confirm email so user can sign in immediately (no email verification friction)
+      try {
+        await fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/auto-confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.WINZO_ENV.SUPABASE_ANON_KEY },
+          body: JSON.stringify({ uid })
+        });
+      } catch(e) { console.warn("Auto-confirm failed:", e.message); }
     } catch (e) {
       throw new Error(e.message);
     }
@@ -238,7 +246,13 @@ async function wzLogin(identifier, password) {
         phone: !identifier.includes("@") ? identifier : undefined,
         password
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Email not confirmed — common for new users; surface clearly
+        if (error.message.toLowerCase().includes("email not confirmed") || error.message.toLowerCase().includes("not confirmed")) {
+          throw new Error("Please verify your email before signing in. Check your inbox for a confirmation link.");
+        }
+        throw new Error(error.message);
+      }
       // Persist Supabase session so auth.updateUser() works across pages
       if (data?.session) {
         localStorage.setItem("winzo_sb_session", JSON.stringify(data.session));
@@ -266,7 +280,10 @@ async function wzLogin(identifier, password) {
       wzSetSession({ ...merged, password: undefined });
       return merged;
     } catch (e) {
-      // Fall through to localStorage
+      // Re-throw confirmed/auth errors directly — don't fall through to localStorage
+      if (e.message.includes("verify your email") || e.message.includes("Invalid login") || e.message.includes("Invalid credentials") || e.message.includes("password")) {
+        throw e;
+      }
       if (window.wzReportError) wzReportError("Supabase login failed, trying local: " + e.message); else console.warn("Supabase login failed, trying local: " + e.message);
     }
   }
