@@ -197,6 +197,7 @@ ${loading ? `<tr><td colspan="10" style="text-align:center;padding:32px;color:va
   <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:var(--danger);border-color:var(--danger);" onclick="adminDeleteUser('${esc(u.uid)}')"><i class="ph ph-trash"></i></button>
   <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:var(--accent);border-color:var(--accent);" onclick="adminResetUserPassword('${esc(u.uid)}','${esc(u.email||"")}','${esc(u.fullName||u.name||"")}')"><i class="ph ph-key"></i> Reset Pass</button>
   <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:#a78bfa;border-color:#a78bfa;" onclick="adminViewUserProfile('${esc(u.uid)}')"><i class="ph ph-user-circle"></i> Profile</button>
+  <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:#34d399;border-color:#34d399;" onclick="adminViewUserKycDocs('${esc(u.uid)}')"><i class="ph ph-identification-card"></i> KYC Docs</button>
 </td></tr>`;}).join("") : emptyRow(10,"No users registered yet.")}
 </tbody></table></div>`;
 };

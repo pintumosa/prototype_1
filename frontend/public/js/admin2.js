@@ -81,6 +81,44 @@ window.filterTable = function (input, tbodyId) {
   });
 };
 
+window.adminViewUserKycDocs = function(uid) {
+  var u = getLiveUsers().find(function(x){ return x.uid === uid; });
+  if (!u) return;
+  function docBtn(key, url, label, icon) {
+    if (key) return `<button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="adminViewKyc('${key}')"><i class="ph ${icon}"></i> ${label}</button>`;
+    if (url) return `<button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="adminShowDocModal('${url}')"><i class="ph ${icon}"></i> ${label}</button>`;
+    return `<span style="font-size:12px;color:var(--text-muted);">No ${label}</span>`;
+  }
+  var existing = document.getElementById("kyc-info-modal");
+  if (existing) existing.remove();
+  var modal = document.createElement("div");
+  modal.id = "kyc-info-modal";
+  modal.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);";
+  modal.innerHTML = `<div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:12px;padding:24px;max-width:480px;width:100%;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <span style="font-family:var(--font-head);font-size:13px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;"><i class="ph ph-identification-card"></i> KYC Details — ${u.fullName||u.name||uid}</span>
+      <button onclick="document.getElementById('kyc-info-modal').remove()" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-secondary);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+      <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Aadhaar No.</div>
+        <div style="font-family:monospace;font-weight:600;margin-top:4px;">${u.aadhaarNumber||"—"}</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">PAN No.</div>
+        <div style="font-family:monospace;font-weight:600;margin-top:4px;">${u.panNumber||"—"}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      ${docBtn(u.kycKey, u.kycUrl, "Aadhaar Front", "ph-identification-card")}
+      ${docBtn(u.kycBackKey, u.kycBackUrl, "Aadhaar Back", "ph-identification-card-reverse")}
+      ${docBtn(u.panKey, u.panUrl, "PAN Card", "ph-identification-badge")}
+    </div>
+  </div>`;
+  modal.addEventListener("click", function(e){ if(e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+};
+
 window.adminViewKyc = function (key) {
   // key is now the Storj public URL directly
   window.adminShowDocModal(key);
