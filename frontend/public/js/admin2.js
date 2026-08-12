@@ -718,9 +718,10 @@ window.showAddBlacklist = function () {
     } else {
       list.innerHTML = allNotifs.map(function(n) {
         var isSeen = _seenIds.includes(n.id);
-        var iconClass = n.type === "deposit" ? "dep" : n.type === "error" ? "err" : "wd";
+        var iconClass = n.type === "deposit" ? "dep" : n.type === "error" ? "err" : n.type === "result" ? "dep" : "wd";
         var icon = n.type === "deposit" ? '<i class="ph ph-arrow-down-left"></i>'
                  : n.type === "error"   ? '<i class="ph ph-warning"></i>'
+                 : n.type === "result"  ? '<i class="ph ph-image-square"></i>'
                  :                        '<i class="ph ph-arrow-up-right"></i>';
         var clickAttr = n.type === "error"
           ? 'onclick="handleNotifClick(\'' + n.id + '\',\'\',\'\')"'
@@ -774,6 +775,13 @@ window.showAddBlacklist = function () {
     pollNotifications();
     setInterval(pollNotifications, 120000);
   };
+
+  window._pushNotif = function(n) {
+    _notifs.unshift({ id: n.id, type: n.type, msg: n.msg, time: n.time, panel: "search-screenshots", label: "Search Screenshots" });
+    if (_notifs.length > 50) _notifs.pop();
+    var unseen = _notifs.concat(_errorNotifs).filter(function(x){ return !_seenIds.includes(x.id); });
+    updateNotifUI(unseen, _notifs.length);
+  };
 })();
 
 // ── Boot ─────────────────────────────────────────────────────
@@ -797,6 +805,24 @@ window.showAddBlacklist = function () {
             if (key && ["view-all-users","review-kyc","fraud-users","wallet-mismatch","overview"].includes(key)) {
               window.loadPanel(key, titleEl.textContent);
             }
+          });
+        })
+        .subscribe();
+
+      // Realtime: notify admin when a new screenshot/result is submitted
+      window.WINZO_SB.channel("admin-results-watch")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "results" }, function(payload) {
+          var r = payload.new;
+          if (window._pushNotif) window._pushNotif({
+            id: "res_" + r.id,
+            type: "result",
+            msg: (r.submitter_name||"A player") + " submitted a " + (r.result||"") + " screenshot for ₹" + (r.amount||"?") + " game",
+            time: new Date().toISOString()
+          });
+          getLiveResultsAsync().then(function() {
+            var titleEl = document.getElementById("topbar-title");
+            var key = titleEl && titleEl.dataset.panelKey;
+            if (key === "search-screenshots") window.loadPanel(key, titleEl.textContent);
           });
         })
         .subscribe();

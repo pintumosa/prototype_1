@@ -53,7 +53,7 @@ function mapResult(r) {
     submitterUid:r.submitter_uid, submitterName:r.submitter_name, submitterPhone:r.submitter_phone,
     opponentUid:r.opponent_uid, opponentName:r.opponent_name, opponentPhone:r.opponent_phone,
     gameType:r.game_type, amount:r.amount, roomCode:r.room_code,
-    result:r.result, proofUrl:r.proof_url, screenshotAt:null, status:r.status, at:r.created_at };
+    result:r.result, proofUrl:r.proof_url, screenshotAt:r.screenshot_at||r.created_at, status:r.status, at:r.created_at };
 }
 
 // ── Live readers (Supabase-first, localStorage fallback) ──────
@@ -81,7 +81,7 @@ var SET_COLS     = "id,game_id,uid,by_name,value,game_type,accepted_by,accepted_
 var DEPOSIT_COLS = "id,uid,user_name,user_phone,user_email,amount,method,txn_id,status,created_at";
 var WITHDRAW_COLS= "id,uid,user_name,user_phone,user_email,amount,method,upi_id,status,created_at";
 var REPORT_COLS  = "id,reporter_uid,reporter_name,opponent,details,proof_url,status,created_at";
-var RESULT_COLS  = "id,challenge_id,game_id,submitter_uid,submitter_name,submitter_phone,opponent_uid,opponent_name,opponent_phone,game_type,amount,room_code,result,proof_url,status,created_at";
+var RESULT_COLS  = "id,challenge_id,game_id,submitter_uid,submitter_name,submitter_phone,opponent_uid,opponent_name,opponent_phone,game_type,amount,room_code,result,proof_url,screenshot_at,status,created_at";
 
 async function getLiveSetsAsync() {
   const data = await sbFetch("challenges", "at", SET_COLS);
