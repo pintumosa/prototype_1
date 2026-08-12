@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS join_requests (
   challenge_id TEXT NOT NULL,
   requester_uid TEXT NOT NULL,
   requester_name TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | rejected
+  status TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | rejected | cancelled
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

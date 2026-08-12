@@ -380,23 +380,32 @@
     }, 10000);
 
     var _lastSetsHash = "";
+    var _myPendingReqs = {}; // challengeId -> requestId (pending)
+
     function _paintSets(arr) {
       const listEl = document.getElementById("sets-list");
-      const hash = JSON.stringify(arr.map(s => s.id + (s.acceptedBy||"")));
+      const hash = JSON.stringify(arr.map(s => s.id + (s.acceptedBy||"")) + JSON.stringify(_myPendingReqs));
       if (hash === _lastSetsHash) return;
       _lastSetsHash = hash;
       if (!arr.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
-      // Only show: open (unmatched) challenges + user's own matched challenge
       const visible = arr.filter(s => !s.acceptedBy || s.uid === session.uid || s.acceptedBy === session.uid);
       if (!visible.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
       listEl.innerHTML = visible.slice().reverse().map((s,i) => {
         const mine = s.uid === session.uid || (!s.uid && s.byName === session.fullName.split(" ")[0]);
         const label = GAME_LABELS[s.gameType] || s.gameType;
-        const action = s.acceptedBy
-          ? `<div class="set-status accepted"><i class="ph-fill ph-handshake"></i> Matched with ${s.acceptedByName||"Player"}</div>`
-          : mine
-            ? `<button class="btn btn-secondary" onclick="cancelSet('${s.id}')"><i class="ph ph-x"></i> Cancel</button>`
-            : `<button class="btn btn-primary" onclick="acceptSet('${s.id}')"><i class="ph-fill ph-sword"></i> Send Game Request</button>`;
+        let action;
+        if (s.acceptedBy) {
+          action = `<div class="set-status accepted"><i class="ph-fill ph-handshake"></i> Matched with ${s.acceptedByName||"Player"}</div>`;
+        } else if (mine) {
+          action = `<button class="btn btn-secondary" onclick="cancelSet('${s.id}')"><i class="ph ph-x"></i> Cancel</button>`;
+        } else if (_myPendingReqs[s.id]) {
+          action = `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div style="font-size:12px;color:var(--success);font-weight:600;display:flex;align-items:center;gap:4px;"><i class="ph-fill ph-check-circle"></i> Request Sent</div>
+            <button class="btn btn-secondary" style="padding:5px 12px;font-size:12px;" onclick="resendGameRequest('${s.id}')"><i class="ph ph-arrow-clockwise"></i> Resend</button>
+          </div>`;
+        } else {
+          action = `<button class="btn btn-primary" onclick="acceptSet('${s.id}')"><i class="ph-fill ph-sword"></i> Send Game Request</button>`;
+        }
         const displayName = mine ? `<span style="color:var(--accent);">You</span>` : `<span style="color:var(--accent);">${s.byName}</span>`;
         return `<div class="set-row" data-testid="set-row-${i}"><div style="flex:1;font-size:15px;font-weight:600;">${displayName} ${mine ? "set" : "has set"} a challenge for <span style="color:var(--accent);">₹${Number(s.value).toLocaleString("en-IN")}</span> · <span class="set-tag" style="display:inline;">${label}</span></div><div>${action}</div></div>`;
       }).join("");
@@ -420,12 +429,22 @@
       const chips = Number(fresh.chips ?? fresh.wallet ?? 0);
       if (chips < s.value) return window.WinzoAuth.toast(`Not enough chips! You have ${chips.toLocaleString("en-IN")}.`, "error", 4000);
       if (!window.WINZO_SB) return window.WinzoAuth.toast("No connection.", "error");
-      // Check if already sent a pending request
-      const { data: existing } = await window.WINZO_SB.from("join_requests").select("id,status").eq("challenge_id", id).eq("requester_uid", session.uid).eq("status","pending").maybeSingle().catch(()=>({data:null}));
-      if (existing) return window.WinzoAuth.toast("Request already sent. Waiting for player to accept.", "info", 3000);
+      // Cancel any existing pending request first
+      if (_myPendingReqs[id]) {
+        await window.WINZO_SB.from("join_requests").update({status:"cancelled"}).eq("id", _myPendingReqs[id]).catch(()=>{});
+      }
       const req = { id: "jr_"+Date.now(), challenge_id: id, requester_uid: session.uid, requester_name: session.fullName.split(" ")[0], status: "pending", created_at: new Date().toISOString() };
       await window.WINZO_SB.from("join_requests").insert(req).catch(()=>{});
+      _myPendingReqs[id] = req.id;
+      _lastSetsHash = "";
+      _paintSets(window.WinzoSets.get());
       window.WinzoAuth.toast("Request sent! Waiting for player to accept…", "success", 3000);
+    };
+
+    window.resendGameRequest = async function(id) {
+      delete _myPendingReqs[id];
+      _lastSetsHash = "";
+      await window.acceptSet(id);
     };
 
     // ── Join Request Queue (shown to challenge setter) ──────────────────────
@@ -544,8 +563,16 @@
       window.WINZO_SB.channel("my_jr_"+session.uid)
         .on("postgres_changes", { event:"UPDATE", schema:"public", table:"join_requests", filter:`requester_uid=eq.${session.uid}` }, function(payload) {
           const r = payload.new;
-          if (r.status === "rejected") window.WinzoAuth.toast("Your join request was declined or challenge was matched.", "error", 3000);
-          if (r.status === "accepted") { window.WinzoAuth.toast("Matched! Game on.", "success"); window.WinzoSets.getAsync().then(arr => { _paintSets(arr); _paintMatchRoom(arr); }); }
+          if (r.status === "rejected" || r.status === "cancelled") {
+            delete _myPendingReqs[r.challenge_id];
+            _lastSetsHash = ""; _paintSets(window.WinzoSets.get());
+            if (r.status === "rejected") window.WinzoAuth.toast("Your request was declined. You can resend.", "error", 3000);
+          }
+          if (r.status === "accepted") {
+            delete _myPendingReqs[r.challenge_id];
+            window.WinzoAuth.toast("Matched! Game on.", "success");
+            window.WinzoSets.getAsync().then(arr => { _lastSetsHash=""; _lastMatchHash=""; _paintSets(arr); _paintMatchRoom(arr); });
+          }
         })
         .subscribe();
     }
