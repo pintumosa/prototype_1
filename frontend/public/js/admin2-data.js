@@ -77,28 +77,34 @@ async function getLiveUserFullAsync(uid) {
     return mapUser(data);
   } catch(e) { return _usersMemCache ? _usersMemCache.find(function(u){ return u.uid === uid; }) || null : null; }
 }
+var SET_COLS     = "id,game_id,uid,by_name,value,game_type,accepted_by,accepted_by_name,accepted_at,room_code,started_at,started_by,at,status";
+var DEPOSIT_COLS = "id,uid,user_name,user_phone,user_email,amount,type,method,txn_id,status,created_at";
+var WITHDRAW_COLS= "id,uid,user_name,user_phone,user_email,amount,method,upi_id,status,created_at";
+var REPORT_COLS  = "id,reporter_uid,reporter_name,opponent,details,proof_url,status,created_at";
+var RESULT_COLS  = "id,challenge_id,game_id,submitter_uid,submitter_name,submitter_phone,opponent_uid,opponent_name,opponent_phone,game_type,amount,room_code,result,proof_url,screenshot_at,status,created_at";
+
 async function getLiveSetsAsync() {
-  const data = await sbFetch("challenges", "at");
+  const data = await sbFetch("challenges", "at", SET_COLS);
   if (data) { const mapped = data.map(mapSet); _safeLocalSet("winzo_sets_global", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_sets_global") || "[]"); } catch(e) { return []; }
 }
 async function getLiveDepositsAsync() {
-  const data = await sbFetch("deposits", "created_at");
+  const data = await sbFetch("deposits", "created_at", DEPOSIT_COLS);
   if (data) { const mapped = data.map(mapDeposit); _safeLocalSet("winzo_deposits", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_deposits") || "[]"); } catch(e) { return []; }
 }
 async function getLiveWithdrawalsAsync() {
-  const data = await sbFetch("withdraws", "created_at");
+  const data = await sbFetch("withdraws", "created_at", WITHDRAW_COLS);
   if (data) { const mapped = data.map(mapWithdraw); _safeLocalSet("winzo_withdraws", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_withdraws") || "[]"); } catch(e) { return []; }
 }
 async function getLiveReportsAsync() {
-  const data = await sbFetch("reports", "created_at");
+  const data = await sbFetch("reports", "created_at", REPORT_COLS);
   if (data) { const mapped = data.map(mapReport); _safeLocalSet("winzo_reports", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_reports") || "[]"); } catch(e) { return []; }
 }
 async function getLiveResultsAsync() {
-  const data = await sbFetch("results", "created_at");
+  const data = await sbFetch("results", "created_at", RESULT_COLS);
   if (data) { const mapped = data.map(mapResult); _safeLocalSet("winzo_results", mapped); return mapped; }
   try { return JSON.parse(localStorage.getItem("winzo_results") || "[]"); } catch(e) { return []; }
 }

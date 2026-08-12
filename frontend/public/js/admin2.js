@@ -20,7 +20,7 @@ function startLiveRefresh(key, label) {
         }
       });
     } else { stopLiveRefresh(); }
-  }, 15000);
+  }, 60000); // 60s — reduces Supabase egress by 4x vs 15s
   startElapsedTick();
 }
 
@@ -733,10 +733,10 @@ window.showAddBlacklist = function () {
     }
   });
 
-  // Poll every 30 seconds after unlock
+  // Poll every 120 seconds — reduces egress vs 30s
   window._startNotifPolling = function() {
     pollNotifications();
-    setInterval(pollNotifications, 30000);
+    setInterval(pollNotifications, 120000);
   };
 })();
 
