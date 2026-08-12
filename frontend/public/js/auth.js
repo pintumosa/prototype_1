@@ -174,7 +174,7 @@ async function wzSignup(payload) {
     }
   }
 
-  // ── Step 1: Insert user row + confirm email via edge function (no files yet) ──
+  // ── Step 1: Insert user row + confirm email via edge function ──
   if (window.WINZO_SB) {
     try {
       const res = await fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/auto-confirm", {
@@ -195,15 +195,15 @@ async function wzSignup(payload) {
     } catch(e) { console.error("[WinzoAuth] auto-confirm edge fn failed:", e.message); }
   }
 
-  // ── Step 2: Sign in now that email is confirmed → get real token for uploads ──
-  if (window.WINZO_SB && !sbToken) {
+  // ── Step 2: Always sign in fresh to get a valid token for uploads ──
+  if (window.WINZO_SB) {
     try {
       const { data: signInData } = await window.WINZO_SB.auth.signInWithPassword({ email: payload.email, password: payload.password });
-      sbToken = signInData?.session?.access_token || null;
+      if (signInData?.session?.access_token) sbToken = signInData.session.access_token;
     } catch(e) { console.warn("Post-confirm sign-in failed:", e.message); }
   }
 
-  // ── Step 3: Upload KYC files now that we have a valid token ──
+  // ── Step 3: Upload KYC files ──
   const kycResult = payload.kycFile
     ? await wzUploadKycFile(await compressImage(payload.kycFile, 1200, 0.75), uid, sbToken)
     : { kycUrl: null, kycKey: null };
@@ -214,14 +214,21 @@ async function wzSignup(payload) {
     ? await wzUploadKycFile(await compressImage(payload.panFile, 1200, 0.75), uid, sbToken)
     : { kycUrl: null, kycKey: null };
 
-  // ── Step 4: Update DB row with uploaded file URLs ──
-  if (window.WINZO_SB && (kycResult.kycUrl || kycBackResult.kycUrl || panResult.kycUrl)) {
+  // ── Step 4: Update DB with file URLs via service role (bypasses RLS) ──
+  if (window.WINZO_SB) {
     try {
-      await window.WINZO_SB.from("users").update({
-        kyc_url: kycResult.kycUrl,
-        kyc_back_url: kycBackResult.kycUrl, kyc_back_key: kycBackResult.kycKey,
-        pan_url: panResult.kycUrl, pan_key: panResult.kycKey
-      }).eq("uid", uid);
+      const res = await fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/auto-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (window.WINZO_ENV.SUPABASE_ANON_KEY || window.WINZO_ENV.SUPABASE_ANON) },
+        body: JSON.stringify({
+          uid, update_only: true,
+          kyc_url: kycResult.kycUrl,
+          kyc_back_url: kycBackResult.kycUrl, kyc_back_key: kycBackResult.kycKey,
+          pan_url: panResult.kycUrl, pan_key: panResult.kycKey
+        })
+      });
+      const resJson = await res.json();
+      if (!res.ok) console.error("[WinzoAuth] KYC URL update failed:", resJson.error);
     } catch(e) { console.warn("[WinzoAuth] KYC URL update failed:", e.message); }
   }
 

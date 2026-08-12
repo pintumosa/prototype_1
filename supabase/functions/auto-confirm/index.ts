@@ -12,8 +12,8 @@ serve(async (req) => {
   let body;
   try { body = await req.json(); } catch(e) { return new Response(JSON.stringify({ error: "invalid json" }), { status: 400, headers: CORS }); }
 
-  const { uid, full_name, phone, email, kyc_type, aadhaar_number, pan_number,
-          kyc_url, kyc_key, kyc_back_url, kyc_back_key, pan_url, pan_key } = body;
+  const { uid, update_only, full_name, phone, email, kyc_type, aadhaar_number, pan_number,
+          kyc_url, kyc_back_url, kyc_back_key, pan_url, pan_key } = body;
 
   if (!uid) return new Response(JSON.stringify({ error: "uid required" }), { status: 400, headers: CORS });
 
@@ -25,6 +25,23 @@ serve(async (req) => {
   }
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+  // ── Update-only mode: just patch KYC URLs ──
+  if (update_only) {
+    try {
+      const { error: updateErr } = await admin.from("users").update({
+        kyc_url: kyc_url || null,
+        kyc_back_url: kyc_back_url || null,
+        kyc_back_key: kyc_back_key || null,
+        pan_url: pan_url || null,
+        pan_key: pan_key || null
+      }).eq("uid", uid);
+      if (updateErr) return new Response(JSON.stringify({ error: "update: " + updateErr.message }), { status: 500, headers: CORS });
+    } catch(e) {
+      return new Response(JSON.stringify({ error: "update exception: " + e.message }), { status: 500, headers: CORS });
+    }
+    return new Response(JSON.stringify({ ok: true }), { headers: { ...CORS, "Content-Type": "application/json" } });
+  }
 
   // Confirm email
   try {
