@@ -30,6 +30,10 @@
 .a2-gate-card h2 { font-size: 1.5rem; margin-bottom: 6px; }
 .a2-gate-card p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
 
+/* ── Admin overrides — prevent style.css bleed-in ── */
+body { padding-bottom: 0 !important; }
+.mobile-bottom-nav { display: none !important; }
+
 /* Layout */
 #dash-wrap {
   display: flex;
@@ -437,10 +441,12 @@
     left: 0; top: 0; bottom: 0;
     transform: translateX(-100%);
     z-index: 300;
+    height: 100%;
   }
   .a2-sidebar.open { transform: translateX(0); box-shadow: 4px 0 30px rgba(0,0,0,0.5); }
   .a2-menu-toggle { display: flex; }
-  .a2-main { width: 100%; }
+  #dash-wrap { display: block; }
+  .a2-main { width: 100%; min-width: 0; display: flex; flex-direction: column; }
   .a2-content { padding: 20px 16px; }
 }
 
