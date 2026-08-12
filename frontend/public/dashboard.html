@@ -520,31 +520,30 @@
 
     window.acceptJoinRequest = async function(reqId, challengeId, requesterUid) {
       clearInterval(_jrTimers[reqId]); delete _jrTimers[reqId];
-      const arr = await window.WinzoSets.getAsync();
-      const s = arr.find(x => x.id === challengeId);
-      if (!s || s.acceptedBy) { window.WinzoAuth.toast("Challenge already matched.", "error"); _removeJR(reqId); return; }
-      // Deduct chips from requester
-      const cur = await getChips(requesterUid);
-      if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {} _removeJR(reqId); return; }
-      await setChips(requesterUid, cur - s.value);
-      // Mark challenge as matched
-      const req = _jrQueue.find(r => r.id === reqId);
-      s.acceptedBy = requesterUid; s.acceptedByName = req ? req.requester_name : "Player"; s.acceptedAt = Date.now();
-      const localArr = window.WinzoSets.get();
-      const li = localArr.findIndex(x => x.id === challengeId);
-      if (li >= 0) localArr[li] = s; localStorage.setItem("winzo_sets_global", JSON.stringify(localArr));
-      _lastSetsHash = ""; _lastMatchHash = "";
-      // Accept this request, reject all others for same challenge
-      if (window.WINZO_SB) {
-        try { await window.WINZO_SB.from("join_requests").update({status:"accepted"}).eq("id",reqId); } catch(e) {}
-        try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("challenge_id",challengeId).eq("status","pending").neq("id",reqId); } catch(e) {}
-        window.WinzoSets.saveOne(s);
-      }
-      _jrQueue = _jrQueue.filter(r => r.challenge_id !== challengeId);
-      Object.keys(_jrTimers).forEach(k => { if (_jrQueue.findIndex(r=>r.id===k)<0) { clearInterval(_jrTimers[k]); delete _jrTimers[k]; } });
-      _renderJRQueue();
-      window.WinzoAuth.toast("Matched! Game on.", "success");
-      renderSets(); renderMatchRoom();
+      try {
+        const arr = await window.WinzoSets.getAsync();
+        const s = arr.find(x => x.id === challengeId);
+        if (!s || s.acceptedBy) { window.WinzoAuth.toast("Challenge already matched.", "error"); _removeJR(reqId); return; }
+        const cur = await getChips(requesterUid);
+        if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {} _removeJR(reqId); return; }
+        await setChips(requesterUid, cur - s.value);
+        const req = _jrQueue.find(r => r.id === reqId);
+        s.acceptedBy = requesterUid; s.acceptedByName = req ? req.requester_name : "Player"; s.acceptedAt = Date.now();
+        const localArr = window.WinzoSets.get();
+        const li = localArr.findIndex(x => x.id === challengeId);
+        if (li >= 0) localArr[li] = s; localStorage.setItem("winzo_sets_global", JSON.stringify(localArr));
+        _lastSetsHash = ""; _lastMatchHash = "";
+        if (window.WINZO_SB) {
+          try { await window.WINZO_SB.from("join_requests").update({status:"accepted"}).eq("id",reqId); } catch(e) {}
+          try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("challenge_id",challengeId).eq("status","pending").neq("id",reqId); } catch(e) {}
+          window.WinzoSets.saveOne(s);
+        }
+        _jrQueue = _jrQueue.filter(r => r.challenge_id !== challengeId);
+        Object.keys(_jrTimers).forEach(k => { if (_jrQueue.findIndex(r=>r.id===k)<0) { clearInterval(_jrTimers[k]); delete _jrTimers[k]; } });
+        _renderJRQueue();
+        window.WinzoAuth.toast("Matched! Game on.", "success");
+        renderSets(); renderMatchRoom();
+      } catch(e) { window.WinzoAuth.toast("Accept failed: " + e.message, "error", 5000); console.error("acceptJoinRequest error:", e); }
     };
 
     window.declineJoinRequest = async function(reqId) {
