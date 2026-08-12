@@ -526,29 +526,26 @@
     // Subscribe to join_requests for my open challenges
     async function _subscribeJoinRequests() {
       if (!window.WINZO_SB) return;
-      const arr = await window.WinzoSets.getAsync();
-      const myChallengeIds = arr.filter(s => s.uid === session.uid && !s.acceptedBy).map(s => s.id);
-      if (!myChallengeIds.length) return;
       window.WINZO_SB.channel("join_requests_"+session.uid)
         .on("postgres_changes", { event:"INSERT", schema:"public", table:"join_requests" }, async function(payload) {
           const r = payload.new;
-          if (!myChallengeIds.includes(r.challenge_id)) return;
           if (r.status !== "pending") return;
-          // attach challenge value for display
           const sets = await window.WinzoSets.getAsync();
-          const s = sets.find(x => x.id === r.challenge_id);
-          r._value = s ? s.value : "?";
+          const s = sets.find(x => x.id === r.challenge_id && x.uid === session.uid && !x.acceptedBy);
+          if (!s) return;
+          r._value = s.value;
           if (!_jrQueue.find(x => x.id === r.id)) { _jrQueue.push(r); _renderJRQueue(); }
         })
         .on("postgres_changes", { event:"UPDATE", schema:"public", table:"join_requests" }, function(payload) {
-          const r = payload.new;
-          if (r.status !== "pending") { _removeJR(r.id); }
+          if (payload.new.status !== "pending") _removeJR(payload.new.id);
         })
         .subscribe();
-      // Also poll for existing pending requests (in case page was refreshed)
+      // Poll for existing pending requests on load
+      const sets = await window.WinzoSets.getAsync();
+      const myChallengeIds = sets.filter(s => s.uid === session.uid && !s.acceptedBy).map(s => s.id);
+      if (!myChallengeIds.length) return;
       const { data } = await window.WINZO_SB.from("join_requests").select("*").in("challenge_id", myChallengeIds).eq("status","pending").catch(()=>({data:[]}));
       if (data && data.length) {
-        const sets = await window.WinzoSets.getAsync();
         data.forEach(r => {
           const s = sets.find(x => x.id === r.challenge_id);
           r._value = s ? s.value : "?";
