@@ -751,6 +751,20 @@ window.showAddBlacklist = function () {
     dashWrap.style.display = "flex";
     window.syncAndReload("overview", "Dashboard Overview");
     if (window._startNotifPolling) window._startNotifPolling();
+    // Realtime: auto-refresh users panel when new user is inserted
+    if (window.WINZO_SB) {
+      window.WINZO_SB.channel("admin-users-watch")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "users" }, function() {
+          getLiveUsersAsync().then(function() {
+            var titleEl = document.getElementById("topbar-title");
+            var key = titleEl && titleEl.dataset.panelKey;
+            if (key && ["view-all-users","review-kyc","fraud-users","wallet-mismatch","overview"].includes(key)) {
+              window.loadPanel(key, titleEl.textContent);
+            }
+          });
+        })
+        .subscribe();
+    }
   }
 
   function showErr(msg) {
