@@ -406,9 +406,10 @@ const WZ_SETS_KEY = "winzo_sets_global";
 async function wzGetSetsAsync() {
   if (window.WINZO_SB) {
     try {
-      const { data } = await window.WINZO_SB.from("challenges").select("*").order("at", { ascending: false });
+      const { data } = await window.WINZO_SB.from("challenges").select("*")
+        .order("at", { ascending: false });
       if (data) {
-        const remote = data.map(r => ({ id:r.id, gameId:r.game_id, uid:r.uid, byName:r.by_name, value:r.value, gameType:r.game_type, acceptedBy:r.accepted_by, acceptedByName:r.accepted_by_name, acceptedAt:r.accepted_at, roomCode:r.room_code, startedAt:r.started_at||null, at:r.at }));
+        const remote = data.map(r => ({ id:r.id, gameId:r.game_id, uid:r.uid, byName:r.by_name, value:r.value, gameType:r.game_type, acceptedBy:r.accepted_by, acceptedByName:r.accepted_by_name, acceptedAt:r.accepted_at, roomCode:r.room_code, roomCodeSharedAt:r.room_code_shared_at||null, roomCodeCopiedAt:r.room_code_copied_at||null, startedAt:r.started_at||null, startedBy:r.started_by||null, setterStartedAt:r.setter_started_at||null, acceptorStartedAt:r.acceptor_started_at||null, status:r.status||null, refunded:r.refunded||false, cancelledBy:r.cancelled_by||null, cancelledAt:r.cancelled_at||null, at:r.at }));
         const local = wzGetSets();
         const localMap = new Map(local.map(s => [s.id, s]));
         // For each remote entry, prefer local version if local has newer info (acceptedBy, roomCode set locally but not yet in Supabase)
@@ -424,11 +425,13 @@ async function wzGetSetsAsync() {
             startedAt: r.startedAt || loc.startedAt || null,
           };
         });
-        // Add local-only entries not yet in Supabase
+        // Only add local-only entries that are not cancelled/completed
         const remoteIds = new Set(remote.map(s => s.id));
-        local.filter(s => !remoteIds.has(s.id)).forEach(s => merged.push(s));
-        localStorage.setItem(WZ_SETS_KEY, JSON.stringify(merged));
-        return merged;
+        local.filter(s => !remoteIds.has(s.id) && s.status !== "cancelled" && s.status !== "completed").forEach(s => merged.push(s));
+        // Strip cancelled/completed before caching so stale local data never resurfaces
+        const clean = merged.filter(s => s.status !== "cancelled" && s.status !== "completed");
+        localStorage.setItem(WZ_SETS_KEY, JSON.stringify(clean));
+        return clean;
       }
     } catch(e) { if (window.wzReportError) wzReportError("Supabase sets fetch failed: " + e.message); else console.warn("Supabase sets fetch failed: " + e.message); }
   }
@@ -442,7 +445,7 @@ async function wzSaveSetsAsync(arr) {
   if (!window.WINZO_SB) return;
   // Only upsert entries that are new or changed (avoid full-table write on every poll)
   try {
-    const rows = arr.map(s => ({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, at:s.at }));
+    const rows = arr.map(s => ({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, room_code_shared_at:s.roomCodeSharedAt||null, room_code_copied_at:s.roomCodeCopiedAt||null, started_at:s.startedAt||null, started_by:s.startedBy||null, setter_started_at:s.setterStartedAt||null, acceptor_started_at:s.acceptorStartedAt||null, status:s.status||null, cancelled_by:s.cancelledBy||null, cancelled_at:s.cancelledAt||null, at:s.at }));
     await window.WINZO_SB.from("challenges").upsert(rows);
   } catch(e) { if (window.wzReportError) wzReportError("Supabase sets save failed: " + e.message); else console.warn("Supabase sets save failed: " + e.message); }
 }
@@ -463,7 +466,7 @@ window.WinzoSets = { get: wzGetSets, getAsync: wzGetSetsAsync, save: wzSaveSets,
     if (idx >= 0) arr[idx] = s; else arr.push(s);
     localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
     if (!window.WINZO_SB) return;
-    try { await window.WINZO_SB.from("challenges").upsert({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, at:s.at }); } catch(e) { if (window.wzReportError) wzReportError("Supabase set saveOne failed: " + e.message); else console.warn("Supabase set saveOne failed: " + e.message); }
+    try { await window.WINZO_SB.from("challenges").upsert({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, room_code_shared_at:s.roomCodeSharedAt||null, room_code_copied_at:s.roomCodeCopiedAt||null, started_at:s.startedAt||null, started_by:s.startedBy||null, setter_started_at:s.setterStartedAt||null, acceptor_started_at:s.acceptorStartedAt||null, status:s.status||null, cancelled_by:s.cancelledBy||null, cancelled_at:s.cancelledAt||null, at:s.at }); } catch(e) { if (window.wzReportError) wzReportError("Supabase set saveOne failed: " + e.message); else console.warn("Supabase set saveOne failed: " + e.message); }
   }
 };
 

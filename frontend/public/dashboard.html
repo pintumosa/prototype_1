@@ -419,24 +419,11 @@
     window.cancelSet = async function(id) {
       const arr = await window.WinzoSets.getAsync();
       const s = arr.find(x => x.id === id && x.uid === session.uid);
-      if (s) {
-        const users = window.WinzoAuth.getUsers();
-        // Refund setter always; refund acceptor only if they had joined (matched)
-        const refundUids = [s.uid];
-        if (s.acceptedBy) refundUids.push(s.acceptedBy);
-        refundUids.forEach(function(uid) {
-          const u = users.find(x => x.uid === uid);
-          if (u) { u.chips = Number(u.chips ?? u.wallet ?? 0) + s.value; u.wallet = u.chips; }
-        });
-        window.WinzoAuth.saveUsers(users);
-        // Sync refunded chips to Supabase for each affected user
-        if (window.WINZO_SB) {
-          refundUids.forEach(function(uid) {
-            const u = users.find(x => x.uid === uid);
-            if (u) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", uid).then(function(){});
-          });
-        }
-      }
+      if (!s) return;
+      if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
+      if (window.WINZO_SB) await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id).catch(()=>{});
+      const cur = await getChips(s.uid);
+      await setChips(s.uid, cur + s.value);
       await window.WinzoSets.delete(id);
       renderSets();
     };
@@ -571,7 +558,6 @@
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="game-result" value="won" /> <span class="badge badge-green">I Won</span></label>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="game-result" value="lost" /> <span class="badge badge-red">I Lost</span></label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="game-result" value="cancel" /> <span class="badge badge-yellow">Cancel Game</span></label>
           </div>
         </div>
         <div style="margin-bottom:14px;" id="screenshot-section">
@@ -598,31 +584,17 @@
         const f = this.files[0];
         if (f) document.getElementById("result-proof-info").textContent = `✓ ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
       });
-      document.querySelectorAll("input[name='game-result']").forEach(r => r.addEventListener("change", function() {
-        document.getElementById("screenshot-section").style.display = this.value === "cancel" ? "none" : "";
-      }));
     }
 
     window.cancelPendingSet = async function(id) {
-      const users = window.WinzoAuth.getUsers();
-      const arr = window.WinzoSets.get();
+      const arr = await window.WinzoSets.getAsync();
       const s = arr.find(x => x.id === id);
-      if (s) {
-        // Refund setter always; refund acceptor only if matched
-        const refundUids = [s.uid];
-        if (s.acceptedBy) refundUids.push(s.acceptedBy);
-        refundUids.forEach(function(uid) {
-          const u = users.find(x => x.uid === uid);
-          if (u) { u.chips = Number(u.chips ?? u.wallet ?? 0) + s.value; u.wallet = u.chips; }
-        });
-        window.WinzoAuth.saveUsers(users);
-        if (window.WINZO_SB) {
-          refundUids.forEach(function(uid) {
-            const u = users.find(x => x.uid === uid);
-            if (u) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", uid).then(function(){});
-          });
-        }
-      }
+      if (!s) return;
+      if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
+      if (s.uid !== session.uid) return;
+      if (window.WINZO_SB) await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id).catch(()=>{});
+      const cur = await getChips(s.uid);
+      await setChips(s.uid, cur + s.value);
       await window.WinzoSets.delete(id);
       window.WinzoAuth.toast("Challenge cancelled. Chips refunded.", "success");
       renderSets(); renderMatchRoom();
