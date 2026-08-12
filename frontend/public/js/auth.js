@@ -169,13 +169,6 @@ async function wzSignup(payload) {
       if (error) throw new Error(error.message);
       if (data?.user?.id) uid = data.user.id;
       sbToken = data?.session?.access_token || null;
-      // Get a real session token after confirmation so KYC uploads work
-      if (!sbToken) {
-        try {
-          const { data: signInData } = await window.WINZO_SB.auth.signInWithPassword({ email: payload.email, password: payload.password });
-          sbToken = signInData?.session?.access_token || null;
-        } catch(e) { console.warn("Post-confirm sign-in failed:", e.message); }
-      }
     } catch (e) {
       throw new Error(e.message);
     }
