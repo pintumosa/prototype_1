@@ -1211,9 +1211,11 @@ body { padding-bottom: 72px; }
   .nav { height: 60px; }
   .nav-links { display: none; }
   .nav-actions .btn span { display: none; }
-  .nav-actions .btn { padding: 10px 14px; font-size: 12px; }
-  .wz-helpline span { display: none; }
-  .nav-inner { gap: 12px; }
+  .nav-actions .btn { padding: 10px 12px; font-size: 12px; }
+  .wz-helpline { display: none; }
+  .nav-inner { gap: 8px; padding: 0 12px; }
+  .brand-name { font-size: 16px; }
+  .brand-mark { width: 28px; height: 28px; font-size: 14px; }
 
   /* Typography */
   h1 { font-size: clamp(1.6rem, 7vw, 2.4rem); }
