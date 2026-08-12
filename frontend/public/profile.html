@@ -79,9 +79,7 @@
       <p style="color:var(--text-secondary);font-size:14px;margin-bottom:12px;">
         Your uploaded document is stored securely. Only compliance officers can view it.
       </p>
-      <a id="kyc-view" href="#" target="_blank" rel="noopener" class="btn btn-secondary" data-testid="view-kyc-btn">
-        <i class="ph ph-file-magnifying-glass"></i> View Uploaded Document
-      </a>
+      <div id="kyc-docs-btns" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
 
       <!-- Shown only when KYC is rejected -->
       <div id="kyc-rejected-section" style="display:none;margin-top:16px;">
@@ -155,21 +153,27 @@
           badge.classList.add("rejected");
           badge.innerHTML = '<i class="ph-fill ph-x-circle"></i> KYC Rejected';
           document.getElementById("kyc-rejected-section").style.display = "block";
-          document.getElementById("kyc-view").style.display = "none";
+          document.getElementById("kyc-docs-btns").style.display = "none";
         } else {
           badge.classList.add("pending");
           badge.innerHTML = '<i class="ph-fill ph-clock"></i> KYC Pending';
         }
-        const kycView = document.getElementById("kyc-view");
-        if (u.kycUrl) kycView.href = u.kycUrl;
-        else kycView.addEventListener("click", (e) => { e.preventDefault(); window.WinzoAuth.toast("No KYC document on file.", "error"); });
+        const kycView = document.getElementById("kyc-docs-btns");
+        function docBtn(url, label, icon) {
+          if (!url) return "";
+          return `<a href="${url}" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size:13px;padding:7px 14px;"><i class="ph ${icon}"></i> ${label}</a>`;
+        }
+        kycView.innerHTML = docBtn(u.kycUrl, "Aadhaar Front", "ph-identification-card")
+          + docBtn(u.kycBackUrl, "Aadhaar Back", "ph-identification-card-reverse")
+          + docBtn(u.panUrl, "PAN Card", "ph-identification-badge");
+        if (!u.kycUrl && !u.kycBackUrl && !u.panUrl) kycView.innerHTML = `<span style="font-size:13px;color:var(--text-muted);">No documents on file.</span>`;
       }
 
       // Render from cache first, then fetch fresh from Supabase
       renderProfile(session);
       if (window.WINZO_SB) {
         window.WINZO_SB.from("users").select("*").eq("uid", session.uid).single().then(({ data }) => {
-          if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycVerified:data.kyc_verified, kycRejected:data.kyc_rejected, createdAt:data.created_at });
+          if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycBackUrl:data.kyc_back_url, panUrl:data.pan_url, kycVerified:data.kyc_verified, kycRejected:data.kyc_rejected, createdAt:data.created_at });
         });
       }
 
@@ -246,7 +250,7 @@
 
           window.WinzoAuth.toast("Documents submitted! Awaiting review.", "success");
           document.getElementById("kyc-rejected-section").style.display = "none";
-          document.getElementById("kyc-view").style.display = "";
+          document.getElementById("kyc-docs-btns").style.display = "";
           const badge = document.getElementById("kyc-badge");
           badge.className = "kyc-badge pending";
           badge.innerHTML = '<i class="ph-fill ph-clock"></i> KYC Pending';
