@@ -6,9 +6,9 @@
   <title>Create Account — WinzoIndia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -196,41 +196,5 @@
       }
     });
   </script>
-<div id="__log_box" style="position:fixed;bottom:0;left:0;right:0;max-height:220px;overflow-y:auto;background:#0a0a0f;border-top:2px solid #7c3aed;font-family:monospace;font-size:11px;color:#a0f0a0;z-index:99999;padding:6px 10px;"></div>
-<script>
-(function(){
-  var KEY = '__winzo_logs';
-  var box = document.getElementById('__log_box');
-  var logs = JSON.parse(localStorage.getItem(KEY)||'[]');
-  // Show previous logs
-  logs.forEach(function(l){ addLine(l.t, l.m); });
-  function addLine(type, msg) {
-    var line = document.createElement('div');
-    line.style.color = type==='error'?'#f87171':type==='warn'?'#fbbf24':'#a0f0a0';
-    line.textContent = '['+type+'] '+msg;
-    box.appendChild(line);
-    box.scrollTop = box.scrollHeight;
-  }
-  function save(type, msg) {
-    logs.push({t:type, m:msg});
-    localStorage.setItem(KEY, JSON.stringify(logs.slice(-200)));
-    addLine(type, msg);
-  }
-  var orig = {log:console.log, warn:console.warn, error:console.error};
-  ['log','warn','error'].forEach(function(t){
-    console[t] = function(){ orig[t].apply(console,arguments);
-      save(t, Array.from(arguments).map(function(a){ try{return typeof a==='object'?JSON.stringify(a):String(a);}catch(e){return String(a);} }).join(' '));
-    };
-  });
-  window.addEventListener('error', function(e){ save('error', e.message+' @ '+e.filename+':'+e.lineno); });
-  window.addEventListener('unhandledrejection', function(e){ save('error','Unhandled: '+e.reason); });
-  // Clear button
-  var btn = document.createElement('button');
-  btn.textContent = 'Clear Logs';
-  btn.style.cssText = 'position:fixed;bottom:4px;right:8px;z-index:100000;font-size:10px;padding:2px 8px;background:#7c3aed;color:#fff;border:none;border-radius:4px;cursor:pointer;';
-  btn.onclick = function(){ logs=[]; localStorage.removeItem(KEY); box.innerHTML=''; };
-  document.body.appendChild(btn);
-})();
-</script>
 </body>
 </html>
