@@ -159,6 +159,7 @@
       <button class="a2-menu-toggle" id="menu-toggle"><i class="ph ph-list"></i></button>
       <div class="a2-topbar-title" id="topbar-title">Dashboard Overview</div>
       <div class="a2-topbar-right">
+        <button onclick="window.syncAndReload(document.getElementById('topbar-title').dataset.panelKey, document.getElementById('topbar-title').textContent)" title="Refresh panel" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-secondary);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;"><i class="ph ph-arrows-clockwise"></i></button>
         <div class="a2-notif-wrap" id="notif-wrap">
           <button class="a2-notif-btn" id="notif-btn" onclick="toggleNotifDropdown()">
             <i class="ph ph-bell"></i>
