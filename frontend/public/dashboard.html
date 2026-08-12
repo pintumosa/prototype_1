@@ -380,18 +380,11 @@
     }, 10000);
 
     var _lastSetsHash = "";
-    var _myPendingReqs = {}; // challengeId -> true if I have a pending request
-    async function _paintSets(arr) {
+    function _paintSets(arr) {
       const listEl = document.getElementById("sets-list");
       const hash = JSON.stringify(arr.map(s => s.id + (s.acceptedBy||"")));
       if (hash === _lastSetsHash) return;
       _lastSetsHash = hash;
-      // Fetch my pending requests once per paint
-      if (window.WINZO_SB) {
-        const { data } = await window.WINZO_SB.from("join_requests").select("challenge_id").eq("requester_uid", session.uid).eq("status","pending").catch(()=>({data:[]}));
-        _myPendingReqs = {};
-        (data||[]).forEach(r => { _myPendingReqs[r.challenge_id] = true; });
-      }
       if (!arr.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
       // Only show: open (unmatched) challenges + user's own matched challenge
       const visible = arr.filter(s => !s.acceptedBy || s.uid === session.uid || s.acceptedBy === session.uid);
@@ -399,14 +392,11 @@
       listEl.innerHTML = visible.slice().reverse().map((s,i) => {
         const mine = s.uid === session.uid || (!s.uid && s.byName === session.fullName.split(" ")[0]);
         const label = GAME_LABELS[s.gameType] || s.gameType;
-        const requested = _myPendingReqs[s.id];
         const action = s.acceptedBy
           ? `<div class="set-status accepted"><i class="ph-fill ph-handshake"></i> Matched with ${s.acceptedByName||"Player"}</div>`
           : mine
             ? `<button class="btn btn-secondary" onclick="cancelSet('${s.id}')"><i class="ph ph-x"></i> Cancel</button>`
-            : requested
-              ? `<button class="btn btn-secondary" disabled style="opacity:0.7;cursor:default;"><i class="ph ph-clock"></i> Requested</button>`
-              : `<button class="btn btn-primary" onclick="acceptSet('${s.id}')"><i class="ph ph-paper-plane-tilt"></i> Send Request</button>`;
+            : `<button class="btn btn-primary" onclick="acceptSet('${s.id}')"><i class="ph-fill ph-sword"></i> Play</button>`;
         const displayName = mine ? `<span style="color:var(--accent);">You</span>` : `<span style="color:var(--accent);">${s.byName}</span>`;
         return `<div class="set-row" data-testid="set-row-${i}"><div style="flex:1;font-size:15px;font-weight:600;">${displayName} ${mine ? "set" : "has set"} a challenge for <span style="color:var(--accent);">₹${Number(s.value).toLocaleString("en-IN")}</span> · <span class="set-tag" style="display:inline;">${label}</span></div><div>${action}</div></div>`;
       }).join("");
@@ -435,9 +425,6 @@
       if (existing) return window.WinzoAuth.toast("Request already sent. Waiting for player to accept.", "info", 3000);
       const req = { id: "jr_"+Date.now(), challenge_id: id, requester_uid: session.uid, requester_name: session.fullName.split(" ")[0], status: "pending", created_at: new Date().toISOString() };
       await window.WINZO_SB.from("join_requests").insert(req).catch(()=>{});
-      _myPendingReqs[id] = true;
-      _lastSetsHash = "";
-      window.WinzoSets.getAsync().then(arr => _paintSets(arr));
       window.WinzoAuth.toast("Request sent! Waiting for player to accept…", "success", 3000);
     };
 
@@ -557,13 +544,7 @@
       window.WINZO_SB.channel("my_jr_"+session.uid)
         .on("postgres_changes", { event:"UPDATE", schema:"public", table:"join_requests", filter:`requester_uid=eq.${session.uid}` }, function(payload) {
           const r = payload.new;
-          if (r.status === "rejected") {
-            // find which challenge this was for and reset button
-            delete _myPendingReqs[r.challenge_id];
-            _lastSetsHash = "";
-            window.WinzoSets.getAsync().then(arr => _paintSets(arr));
-            window.WinzoAuth.toast("Your join request was declined or challenge was matched.", "error", 3000);
-          }
+          if (r.status === "rejected") window.WinzoAuth.toast("Your join request was declined or challenge was matched.", "error", 3000);
           if (r.status === "accepted") { window.WinzoAuth.toast("Matched! Game on.", "success"); window.WinzoSets.getAsync().then(arr => { _paintSets(arr); _paintMatchRoom(arr); }); }
         })
         .subscribe();
