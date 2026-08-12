@@ -328,8 +328,10 @@
 
     async function getChips(uid) {
       if (window.WINZO_SB) {
-        const { data } = await window.WINZO_SB.from("users").select("chips").eq("uid", uid).maybeSingle().catch(()=>({data:null}));
-        if (data) return Number(data.chips || 0);
+        try {
+          const { data } = await window.WINZO_SB.from("users").select("chips").eq("uid", uid).maybeSingle();
+          if (data) return Number(data.chips || 0);
+        } catch(e) {}
       }
       const u = window.WinzoAuth.getUsers().find(x => x.uid === uid);
       return Number(u && (u.chips ?? u.wallet) || 0);
