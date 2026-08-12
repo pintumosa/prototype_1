@@ -258,7 +258,7 @@ async function wzLogin(identifier, password) {
         localStorage.setItem("winzo_sb_session", JSON.stringify(data.session));
       }
       // Sync fresh user data from Supabase DB (query by uid so RLS passes)
-      const { data: dbUser } = await window.WINZO_SB.from("users").select("*").eq("uid", data.user.id).single();
+      const { data: dbUser } = await window.WINZO_SB.from("users").select("*").eq("uid", data.user.id).maybeSingle();
       const merged = dbUser ? {
         uid: dbUser.uid, fullName: dbUser.full_name, phone: dbUser.phone,
         email: dbUser.email, kycType: dbUser.kyc_type,

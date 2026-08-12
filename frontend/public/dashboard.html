@@ -331,7 +331,7 @@
     async function refreshView() {
       if (window.WINZO_SB) {
         try {
-          const { data } = await window.WINZO_SB.from("users").select("*").eq("uid", session.uid).single();
+          const { data } = await window.WINZO_SB.from("users").select("*").eq("uid", session.uid).maybeSingle();
           if (data) {
             const users = window.WinzoAuth.getUsers();
             const idx = users.findIndex(u => u.uid === session.uid);

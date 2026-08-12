@@ -72,7 +72,7 @@ async function getLiveUsersAsync() {
 async function getLiveUserFullAsync(uid) {
   if (!window.WINZO_SB) return null;
   try {
-    const { data, error } = await window.WINZO_SB.from("users").select("*").eq("uid", uid).single();
+    const { data, error } = await window.WINZO_SB.from("users").select("*").eq("uid", uid).maybeSingle();
     if (error) throw error;
     return mapUser(data);
   } catch(e) { return _usersMemCache ? _usersMemCache.find(function(u){ return u.uid === uid; }) || null : null; }

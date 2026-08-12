@@ -172,7 +172,7 @@
       // Render from cache first, then fetch fresh from Supabase
       renderProfile(session);
       if (window.WINZO_SB) {
-        window.WINZO_SB.from("users").select("*").eq("uid", session.uid).single().then(({ data }) => {
+        window.WINZO_SB.from("users").select("*").eq("uid", session.uid).maybeSingle().then(({ data }) => {
           if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycBackUrl:data.kyc_back_url, panUrl:data.pan_url, kycVerified:data.kyc_verified, kycRejected:data.kyc_rejected, createdAt:data.created_at });
         });
       }
