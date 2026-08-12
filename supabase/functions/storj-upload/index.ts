@@ -9,7 +9,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3";
 import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner@3";
 
 const CORS = {
@@ -56,7 +56,12 @@ serve(async (req) => {
     { expiresIn: 300 }
   );
 
-  const publicUrl = `${Deno.env.get("STORJ_PUBLIC_BASE") || `${Deno.env.get("STORJ_ENDPOINT")}/${Deno.env.get("STORJ_BUCKET")}`}/${key}`;
+  // Presigned GET URL valid for 7 days — used as the stored public URL
+  const publicUrl = await getSignedUrl(
+    s3,
+    new GetObjectCommand({ Bucket: Deno.env.get("STORJ_BUCKET")!, Key: key }),
+    { expiresIn: 604800 }
+  );
 
   return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {
     headers: { ...CORS, "Content-Type": "application/json" },
