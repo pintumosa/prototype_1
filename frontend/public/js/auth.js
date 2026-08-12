@@ -222,7 +222,7 @@ async function wzSignup(payload) {
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (window.WINZO_ENV.SUPABASE_ANON_KEY || window.WINZO_ENV.SUPABASE_ANON) },
         body: JSON.stringify({
           uid, update_only: true,
-          kyc_url: kycResult.kycUrl,
+          kyc_url: kycResult.kycUrl, kyc_key: kycResult.kycKey,
           kyc_back_url: kycBackResult.kycUrl, kyc_back_key: kycBackResult.kycKey,
           pan_url: panResult.kycUrl, pan_key: panResult.kycKey
         })

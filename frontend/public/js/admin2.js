@@ -86,8 +86,9 @@ window.adminViewUserKycDocs = function(uid) {
   if (!u) return;
   function renderKycModal(u) {
     function docBtn(key, url, label, icon) {
-      if (key) return `<button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="adminViewKyc('${key}')"><i class="ph ${icon}"></i> ${label}</button>`;
-      if (url) return `<button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="adminShowDocModal('${url}')"><i class="ph ${icon}"></i> ${label}</button>`;
+      // Extract key from storjshare URL if key not stored (e.g. /storj/kyc/uid/file.png)
+      var resolvedKey = key || (url && url.match(/\/storj\/(.+)$/)?.[1]) || null;
+      if (resolvedKey) return `<button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="adminViewKyc('${resolvedKey}')"><i class="ph ${icon}"></i> ${label}</button>`;
       return `<span style="font-size:12px;color:var(--text-muted);">No ${label}</span>`;
     }
     var existing = document.getElementById("kyc-info-modal");
@@ -124,17 +125,36 @@ window.adminViewUserKycDocs = function(uid) {
 };
 
 window.adminViewKyc = function (key) {
-  // key is now the Storj public URL directly
-  window.adminShowDocModal(key);
+  var modal = document.createElement("div");
+  modal.id = "kyc-doc-modal";
+  modal.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);";
+  modal.innerHTML = `<div style="color:#fff;font-size:14px;"><i class="ph ph-circle-notch" style="animation:spin 1s linear infinite;margin-right:8px;"></i>Loading…</div>`;
+  modal.addEventListener("click", function(e){ if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+  fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/storj-upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.WINZO_ENV.SUPABASE_ANON },
+    body: JSON.stringify({ action: "presign-get", key })
+  }).then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.blob();
+  }).then(function(blob){
+    var url = URL.createObjectURL(blob);
+    modal.remove();
+    window.adminShowDocModal(url);
+  }).catch(function(e){ modal.remove(); showToast("Could not load document: " + e.message, "error"); });
 };
 
 window.adminShowDocModal = function(url) {
   var existing = document.getElementById("kyc-doc-modal");
   if (existing) existing.remove();
-  var isImg = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url) || url.startsWith("data:image") || /storjshare\.io/i.test(url);
-  var content = isImg
-    ? `<img src="${url}" style="max-width:100%;max-height:75vh;border-radius:8px;display:block;margin:0 auto;" />`
-    : `<iframe src="${url}" style="width:100%;height:75vh;border:none;border-radius:8px;"></iframe>`;
+  var isPdf = /\.pdf(\?|$)/i.test(url);
+  var content = isPdf
+    ? `<iframe src="${url}" style="width:100%;height:75vh;border:none;border-radius:8px;"></iframe>`
+    : `<img src="${url}" style="max-width:100%;max-height:75vh;border-radius:8px;display:block;margin:0 auto;" />
+       <div style="text-align:center;margin-top:12px;">
+         <a href="${url}" download target="_blank" rel="noopener" class="btn btn-secondary" style="font-size:12px;padding:6px 16px;text-decoration:none;"><i class="ph ph-download-simple"></i> Download</a>
+       </div>`;
   var modal = document.createElement("div");
   modal.id = "kyc-doc-modal";
   modal.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);";
@@ -209,8 +229,20 @@ window.rejectDepositRequest = function(id) {
   window.syncAndReload("new-deposit-requests", "New Deposit Requests");
 };
 
-window.adminDeleteUser = function (uid) {
+window.adminDeleteUser = async function (uid) {
   if (!confirm("Delete this user permanently?")) return;
+  try {
+    const supabaseUrl = window.WINZO_ENV?.SUPABASE_URL || "";
+    const res = await fetch(supabaseUrl + "/functions/v1/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid })
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || "Delete failed");
+  } catch(e) {
+    return showToast("Delete failed: " + e.message, "error");
+  }
   saveLiveUsers(getLiveUsers().filter(function(u){ return u.uid !== uid; }));
   showToast("User deleted", "success");
   window.syncAndReload("view-all-users", "View All Users");

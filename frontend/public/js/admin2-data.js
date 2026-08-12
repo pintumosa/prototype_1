@@ -15,12 +15,12 @@ async function sbFetch(table, order, columns) {
 }
 
 // Lean column list for user list views (excludes heavy KYC image data)
-var USER_LIST_COLS = "uid,full_name,phone,email,kyc_type,kyc_verified,kyc_rejected,chips,created_at";
+var USER_LIST_COLS = "uid,full_name,phone,email,kyc_type,kyc_verified,kyc_rejected,kyc_url,kyc_key,kyc_back_url,kyc_back_key,pan_url,pan_key,aadhaar_number,pan_number,chips,created_at";
 
 // ── Map Supabase rows → app shape ─────────────────────────────
 function mapUser(r) {
   return { uid:r.uid, fullName:r.full_name, phone:r.phone, email:r.email,
-    kycType:r.kyc_type, kycUrl:r.kyc_url, kycKey:r.kyc_key||null,
+    kycType:r.kyc_type, kycUrl:r.kyc_url||null, kycKey:r.kyc_key||null,
     kycBackUrl:r.kyc_back_url||null, kycBackKey:r.kyc_back_key||null,
     aadhaarNumber:r.aadhaar_number||null, panNumber:r.pan_number||null,
     panUrl:r.pan_url||null, panKey:r.pan_key||null,
@@ -30,12 +30,12 @@ function mapUser(r) {
 function mapSet(r) {
   return { id:r.id, gameId:r.game_id, uid:r.uid, byName:r.by_name, value:r.value,
     gameType:r.game_type, acceptedBy:r.accepted_by, acceptedByName:r.accepted_by_name,
-    acceptedAt:r.accepted_at, roomCode:r.room_code, startedAt:r.started_at||null,
-    startedByName:r.started_by||null, at:r.at };
+    acceptedAt:r.accepted_at, roomCode:r.room_code, startedAt:null,
+    startedByName:null, at:r.at };
 }
 function mapDeposit(r) {
   return { id:r.id, uid:r.uid, user:r.user_name, userPhone:r.user_phone,
-    userEmail:r.user_email, amount:r.amount, type:r.type||"Deposit",
+    userEmail:r.user_email, amount:r.amount, type:"Deposit",
     method:r.method, txnId:r.txn_id, status:r.status, time:r.created_at };
 }
 function mapWithdraw(r) {
@@ -53,7 +53,7 @@ function mapResult(r) {
     submitterUid:r.submitter_uid, submitterName:r.submitter_name, submitterPhone:r.submitter_phone,
     opponentUid:r.opponent_uid, opponentName:r.opponent_name, opponentPhone:r.opponent_phone,
     gameType:r.game_type, amount:r.amount, roomCode:r.room_code,
-    result:r.result, proofUrl:r.proof_url, screenshotAt:r.screenshot_at||null, status:r.status, at:r.created_at };
+    result:r.result, proofUrl:r.proof_url, screenshotAt:null, status:r.status, at:r.created_at };
 }
 
 // ── Live readers (Supabase-first, localStorage fallback) ──────
@@ -77,11 +77,11 @@ async function getLiveUserFullAsync(uid) {
     return mapUser(data);
   } catch(e) { return _usersMemCache ? _usersMemCache.find(function(u){ return u.uid === uid; }) || null : null; }
 }
-var SET_COLS     = "id,game_id,uid,by_name,value,game_type,accepted_by,accepted_by_name,accepted_at,room_code,started_at,started_by,at,status";
-var DEPOSIT_COLS = "id,uid,user_name,user_phone,user_email,amount,type,method,txn_id,status,created_at";
+var SET_COLS     = "id,game_id,uid,by_name,value,game_type,accepted_by,accepted_by_name,accepted_at,room_code,at";
+var DEPOSIT_COLS = "id,uid,user_name,user_phone,user_email,amount,method,txn_id,status,created_at";
 var WITHDRAW_COLS= "id,uid,user_name,user_phone,user_email,amount,method,upi_id,status,created_at";
 var REPORT_COLS  = "id,reporter_uid,reporter_name,opponent,details,proof_url,status,created_at";
-var RESULT_COLS  = "id,challenge_id,game_id,submitter_uid,submitter_name,submitter_phone,opponent_uid,opponent_name,opponent_phone,game_type,amount,room_code,result,proof_url,screenshot_at,status,created_at";
+var RESULT_COLS  = "id,challenge_id,game_id,submitter_uid,submitter_name,submitter_phone,opponent_uid,opponent_name,opponent_phone,game_type,amount,room_code,result,proof_url,status,created_at";
 
 async function getLiveSetsAsync() {
   const data = await sbFetch("challenges", "at", SET_COLS);

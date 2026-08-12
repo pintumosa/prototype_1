@@ -825,5 +825,16 @@
     hb.addEventListener('click', () => { hb.classList.toggle('open'); nl.classList.toggle('open'); });
     nl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { hb.classList.remove('open'); nl.classList.remove('open'); }));
   </script>
+<div id="__log_box" style="position:fixed;bottom:0;left:0;right:0;max-height:220px;overflow-y:auto;background:#0a0a0f;border-top:2px solid #7c3aed;font-family:monospace;font-size:11px;z-index:99999;padding:6px 10px;"></div>
+<script>
+(function(){
+  var KEY='__winzo_logs',box=document.getElementById('__log_box'),logs=JSON.parse(localStorage.getItem(KEY)||'[]');
+  logs.forEach(function(l){addLine(l.t,l.m);});
+  function addLine(t,m){var d=document.createElement('div');d.style.color=t==='error'?'#f87171':t==='warn'?'#fbbf24':'#a0f0a0';d.textContent='['+t+'] '+m;box.appendChild(d);box.scrollTop=box.scrollHeight;}
+  var btn=document.createElement('button');btn.textContent='Clear Logs';btn.style.cssText='position:fixed;bottom:4px;right:8px;z-index:100000;font-size:10px;padding:2px 8px;background:#7c3aed;color:#fff;border:none;border-radius:4px;cursor:pointer;';
+  btn.onclick=function(){logs=[];localStorage.removeItem(KEY);box.innerHTML='';};
+  document.body.appendChild(btn);
+})();
+</script>
 </body>
 </html>

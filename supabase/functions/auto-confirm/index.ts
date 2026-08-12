@@ -13,7 +13,7 @@ serve(async (req) => {
   try { body = await req.json(); } catch(e) { return new Response(JSON.stringify({ error: "invalid json" }), { status: 400, headers: CORS }); }
 
   const { uid, update_only, full_name, phone, email, kyc_type, aadhaar_number, pan_number,
-          kyc_url, kyc_back_url, kyc_back_key, pan_url, pan_key } = body;
+          kyc_url, kyc_key, kyc_back_url, kyc_back_key, pan_url, pan_key } = body;
 
   if (!uid) return new Response(JSON.stringify({ error: "uid required" }), { status: 400, headers: CORS });
 
@@ -31,6 +31,7 @@ serve(async (req) => {
     try {
       const { error: updateErr } = await admin.from("users").update({
         kyc_url: kyc_url || null,
+        kyc_key: kyc_key || null,
         kyc_back_url: kyc_back_url || null,
         kyc_back_key: kyc_back_key || null,
         pan_url: pan_url || null,
@@ -62,6 +63,7 @@ serve(async (req) => {
       aadhaar_number: aadhaar_number || null,
       pan_number: pan_number || null,
       kyc_url: kyc_url || null,
+      kyc_key: kyc_key || null,
       kyc_back_url: kyc_back_url || null,
       kyc_back_key: kyc_back_key || null,
       pan_url: pan_url || null,
