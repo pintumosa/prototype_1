@@ -395,9 +395,7 @@
         changed = true;
       });
       if (changed) _renderJRQueue();
-    }, 3000);
-
-    // Poll for own request status (Player B) every 3s
+    }, 1000);
     setInterval(async function() {
       if (!window.WINZO_SB || document.hidden) return;
       const ids = Object.values(_myPendingReqs);
@@ -414,7 +412,7 @@
           if (r.status === "rejected") window.WinzoAuth.toast("Your request was declined. You can resend.", "error", 3000);
         }
       });
-    }, 3000);
+    }, 1000);
 
     var _lastSetsHash = "";
     var _myPendingReqs = {}; // challengeId -> requestId (pending)
