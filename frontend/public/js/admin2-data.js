@@ -30,8 +30,10 @@ function mapUser(r) {
 function mapSet(r) {
   return { id:r.id, gameId:r.game_id, uid:r.uid, byName:r.by_name, value:r.value,
     gameType:r.game_type, acceptedBy:r.accepted_by, acceptedByName:r.accepted_by_name,
-    acceptedAt:r.accepted_at, roomCode:r.room_code, startedAt:null,
-    startedByName:null, at:r.at };
+    acceptedAt:r.accepted_at, roomCode:r.room_code,
+    startedAt:r.started_at||null, startedBy:r.started_by||null,
+    status:r.status||null, cancelledBy:r.cancelled_by||null, cancelledAt:r.cancelled_at||null,
+    at:r.at };
 }
 function mapDeposit(r) {
   return { id:r.id, uid:r.uid, user:r.user_name, userPhone:r.user_phone,
@@ -78,7 +80,7 @@ async function getLiveUserFullAsync(uid) {
     return mapUser(data);
   } catch(e) { return _usersMemCache ? _usersMemCache.find(function(u){ return u.uid === uid; }) || null : null; }
 }
-var SET_COLS     = "id,game_id,uid,by_name,value,game_type,accepted_by,accepted_by_name,accepted_at,room_code,at";
+var SET_COLS     = "id,game_id,uid,by_name,value,game_type,accepted_by,accepted_by_name,accepted_at,room_code,started_at,started_by,at,status,cancelled_by,cancelled_at";
 var DEPOSIT_COLS = "id,uid,user_name,user_phone,user_email,amount,method,txn_id,status,created_at";
 var WITHDRAW_COLS= "id,uid,user_name,user_phone,user_email,amount,method,upi_id,status,created_at";
 var REPORT_COLS  = "id,reporter_uid,reporter_name,opponent,details,proof_url,status,created_at";
@@ -170,6 +172,7 @@ window.syncAndReload = function(panelKey, panelLabel) {
     "search-challenges":     getLiveSetsAsync,
     "all-challenges":        getLiveSetsAsync,
     "challenges-setup":      getLiveSetsAsync,
+    "game-monitor":          function() { return Promise.all([getLiveSetsAsync(), getLiveResultsAsync()]); },
     "new-deposit-requests":  getLiveDepositsAsync,
     "deposits-2h":           getLiveDepositsAsync,
     "all-deposits":          getLiveDepositsAsync,

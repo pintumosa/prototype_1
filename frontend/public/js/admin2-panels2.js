@@ -318,3 +318,89 @@ PANELS["settings"] = function() {
   <button class="btn btn-primary" onclick="adminSaveSettings()"><i class="ph-fill ph-floppy-disk"></i> Save Settings</button>
 </div></div>`;
 };
+
+// ── Game Monitor ──────────────────────────────────────────────
+PANELS["game-monitor"] = function() {
+  var sets = getLiveSets();
+  var results = getLiveResults();
+
+  // Build result lookup by challengeId
+  var resultMap = {};
+  results.forEach(function(r) {
+    if (!resultMap[r.challengeId]) resultMap[r.challengeId] = [];
+    resultMap[r.challengeId].push(r);
+  });
+
+  // Derive status for each game
+  function gameStatus(s) {
+    if (s.status === "cancelled" || s.cancelledBy) return "cancelled";
+    if (s.status === "completed") return "completed";
+    if (resultMap[s.id] && resultMap[s.id].length) return "result_pending";
+    if (s.startedAt) return "live";
+    if (s.acceptedBy) return "matched";
+    return "open";
+  }
+
+  var statusOrder = { live:0, result_pending:1, matched:2, open:3, completed:4, cancelled:5 };
+  sets.sort(function(a,b){ return (statusOrder[gameStatus(a)]||9) - (statusOrder[gameStatus(b)]||9); });
+
+  function statusBadgeG(st) {
+    var map = {
+      live:           "<span class='badge badge-green'>🟢 Live</span>",
+      result_pending: "<span class='badge badge-yellow'>⏳ Result Pending</span>",
+      matched:        "<span class='badge badge-blue'>🤝 Matched</span>",
+      open:           "<span class='badge' style='background:rgba(255,255,255,0.06);color:var(--text-secondary);border:1px solid var(--border-subtle);'>Open</span>",
+      completed:      "<span class='badge badge-green'>✅ Completed</span>",
+      cancelled:      "<span class='badge badge-red'>❌ Cancelled</span>"
+    };
+    return map[st] || st;
+  }
+
+  var rows = sets.map(function(s, i) {
+    var st = gameStatus(s);
+    var res = resultMap[s.id] || [];
+    var resultCells = "—";
+    if (res.length) {
+      resultCells = res.map(function(r) {
+        var color = r.result === "won" ? "#4ade80" : r.result === "lost" ? "#f87171" : "#fbbf24";
+        var thumb = r.proofUrl
+          ? "<button class='btn btn-secondary' style='padding:2px 7px;font-size:11px;' onclick=\"adminShowDocModal('"+r.proofUrl+"')\">📷</button>"
+          : "";
+        return "<div style='font-size:12px;color:"+color+";font-weight:600;'>"+
+          (r.submitterName||"?")+" says <strong>"+r.result.toUpperCase()+"</strong> "+thumb+"</div>";
+      }).join("");
+    }
+    var cancelInfo = s.cancelledBy ? "<div style='font-size:11px;color:#f87171;'>Cancelled by: "+s.cancelledBy+(s.cancelledAt?" at "+new Date(s.cancelledAt).toLocaleString("en-IN"):"")+"</div>" : "";
+    var startInfo = s.startedAt ? "<div style='font-size:11px;color:#4ade80;'>Started: "+new Date(s.startedAt).toLocaleString("en-IN")+(s.startedBy?" by "+s.startedBy:"")+"</div>" : "";
+
+    return "<tr>"
+      + "<td style='font-size:11px;font-family:monospace;color:var(--accent);'>"+(s.gameId||s.id).slice(-8)+"</td>"
+      + "<td>"+statusBadgeG(st)+"</td>"
+      + "<td><strong>"+(s.byName||"—")+"</strong><div style='font-size:11px;color:var(--text-muted);'>₹"+(s.value||0)+" · "+(s.gameType||"—")+"</div></td>"
+      + "<td>"+(s.acceptedByName||"<span style='color:var(--text-muted);font-size:12px;'>Waiting...</span>")+"</td>"
+      + "<td style='font-family:monospace;font-size:12px;'>"+(s.roomCode||"—")+"</td>"
+      + "<td>"+startInfo+(s.startedAt?"":"—")+"</td>"
+      + "<td>"+resultCells+"</td>"
+      + "<td>"+cancelInfo+(s.cancelledBy?"":"—")+"</td>"
+      + "<td style='font-size:11px;color:var(--text-muted);'>"+new Date(s.at).toLocaleString("en-IN")+"</td>"
+      + "</tr>";
+  }).join("");
+
+  var live = sets.filter(function(s){ return gameStatus(s)==="live"; }).length;
+  var pending = sets.filter(function(s){ return gameStatus(s)==="result_pending"; }).length;
+  var completed = sets.filter(function(s){ return gameStatus(s)==="completed"; }).length;
+  var cancelled = sets.filter(function(s){ return gameStatus(s)==="cancelled"; }).length;
+
+  return "<div class='a2-panel-head'>"
+    + "<h2><i class='ph ph-monitor-play'></i> Game Monitor</h2>"
+    + "<div style='display:flex;gap:8px;flex-wrap:wrap;'>"
+    + "<span class='badge badge-green'>🟢 Live: "+live+"</span>"
+    + "<span class='badge badge-yellow'>⏳ Pending: "+pending+"</span>"
+    + "<span class='badge badge-green'>✅ Done: "+completed+"</span>"
+    + "<span class='badge badge-red'>❌ Cancelled: "+cancelled+"</span>"
+    + "</div></div>"
+    + "<div class='a2-search'><input type='text' placeholder='Search player name...' oninput=\"filterTable(this,'gm-tbody',2,3)\" /></div>"
+    + "<div class='a2-table-wrap'><table class='a2-table'><thead><tr>"
+    + "<th>Game ID</th><th>Status</th><th>Setter</th><th>Opponent</th><th>Room Code</th><th>Started</th><th>Result Claims</th><th>Cancelled</th><th>Created</th>"
+    + "</tr></thead><tbody id='gm-tbody'>"+(sets.length ? rows : emptyRow(9,"No games found."))+"</tbody></table></div>";
+};
