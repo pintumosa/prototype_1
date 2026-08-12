@@ -381,17 +381,20 @@
     // Poll for incoming join requests (Player A) every 3s
     setInterval(async function() {
       if (!window.WINZO_SB || document.hidden) return;
-      const sets = window.WinzoSets.get();
+      const sets = await window.WinzoSets.getAsync();
       const myChallengeIds = sets.filter(s => s.uid === session.uid && !s.acceptedBy).map(s => s.id);
       if (!myChallengeIds.length) return;
-      const { data } = await window.WINZO_SB.from("join_requests").select("*").in("challenge_id", myChallengeIds).eq("status","pending").catch(()=>({data:[]}));
-      (data||[]).forEach(r => {
+      let result; try { result = await window.WINZO_SB.from("join_requests").select("*").in("challenge_id", myChallengeIds).eq("status","pending"); } catch(e) { return; }
+      const data = result.data || [];
+      let changed = false;
+      data.forEach(r => {
         if (_jrQueue.find(x => x.id === r.id)) return;
         const s = sets.find(x => x.id === r.challenge_id);
         r._value = s ? s.value : "?";
         _jrQueue.push(r);
+        changed = true;
       });
-      if ((data||[]).length) _renderJRQueue();
+      if (changed) _renderJRQueue();
     }, 3000);
 
     // Poll for own request status (Player B) every 3s
@@ -399,8 +402,8 @@
       if (!window.WINZO_SB || document.hidden) return;
       const ids = Object.values(_myPendingReqs);
       if (!ids.length) return;
-      const { data } = await window.WINZO_SB.from("join_requests").select("id,challenge_id,status").in("id", ids).catch(()=>({data:[]}));
-      (data||[]).forEach(async r => {
+      let res; try { res = await window.WINZO_SB.from("join_requests").select("id,challenge_id,status").in("id", ids); } catch(e) { return; }
+      (res.data||[]).forEach(async r => {
         if (r.status === "accepted") {
           delete _myPendingReqs[r.challenge_id];
           window.WinzoAuth.toast("Matched! Game on.", "success");
