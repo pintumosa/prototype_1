@@ -562,14 +562,18 @@
 
     window.cancelSet = async function(id) {
       const arr = await window.WinzoSets.getAsync();
-      const s = arr.find(x => x.id === id && x.uid === session.uid);
-      if (!s) return;
+      const s = arr.find(x => x.id === id);
+      if (!s) return window.WinzoAuth.toast("Challenge not found.", "error");
+      if (s.uid !== session.uid) return window.WinzoAuth.toast("Not your challenge.", "error");
       if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
-      if (window.WINZO_SB) await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id).catch(()=>{});
-      const cur = await getChips(s.uid);
-      await setChips(s.uid, cur + s.value);
-      await window.WinzoSets.delete(id);
-      renderSets();
+      try {
+        if (window.WINZO_SB) await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id).catch(()=>{});
+        const cur = await getChips(s.uid);
+        await setChips(s.uid, cur + s.value);
+        await window.WinzoSets.delete(id);
+        renderSets();
+        window.WinzoAuth.toast("Challenge cancelled. Chips refunded.", "success");
+      } catch(e) { window.WinzoAuth.toast("Cancel failed: " + e.message, "error", 5000); }
     };
 
     function updateWinPreview(val) {
