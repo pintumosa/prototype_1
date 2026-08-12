@@ -396,7 +396,7 @@
           ? `<div class="set-status accepted"><i class="ph-fill ph-handshake"></i> Matched with ${s.acceptedByName||"Player"}</div>`
           : mine
             ? `<button class="btn btn-secondary" onclick="cancelSet('${s.id}')"><i class="ph ph-x"></i> Cancel</button>`
-            : `<button class="btn btn-primary" onclick="acceptSet('${s.id}')"><i class="ph-fill ph-sword"></i> Play</button>`;
+            : `<button class="btn btn-primary" onclick="acceptSet('${s.id}')"><i class="ph-fill ph-sword"></i> Send Game Request</button>`;
         const displayName = mine ? `<span style="color:var(--accent);">You</span>` : `<span style="color:var(--accent);">${s.byName}</span>`;
         return `<div class="set-row" data-testid="set-row-${i}"><div style="flex:1;font-size:15px;font-weight:600;">${displayName} ${mine ? "set" : "has set"} a challenge for <span style="color:var(--accent);">₹${Number(s.value).toLocaleString("en-IN")}</span> · <span class="set-tag" style="display:inline;">${label}</span></div><div>${action}</div></div>`;
       }).join("");
