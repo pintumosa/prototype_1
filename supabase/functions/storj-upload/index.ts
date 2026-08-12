@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3";
+import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3";
 import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner@3";
 
 const CORS = {
@@ -32,7 +32,7 @@ serve(async (req) => {
     const bucket = Deno.env.get("STORJ_BUCKET")!;
 
     const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }), { expiresIn: 300 });
-    const publicUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 604800 });
+    const publicUrl = `${Deno.env.get("STORJ_PUBLIC_BASE")}/${key}`;
 
     return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {
       headers: { ...CORS, "Content-Type": "application/json" },
