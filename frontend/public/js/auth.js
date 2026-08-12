@@ -227,8 +227,10 @@ async function wzSignup(payload) {
           pan_url: panResult.kycUrl, pan_key: panResult.kycKey
         })
       });
-      if (!res.ok) { const e = await res.json(); console.warn("auto-confirm/insert failed:", e.error); }
-    } catch(e) { console.warn("auto-confirm edge fn failed:", e.message); }
+      const resJson = await res.json();
+      console.log("[WinzoAuth] auto-confirm response:", res.status, resJson);
+      if (!res.ok) console.error("[WinzoAuth] auto-confirm/insert failed:", resJson.error);
+    } catch(e) { console.error("[WinzoAuth] auto-confirm edge fn failed:", e.message); }
   }
 
   const users = wzGetUsers();
