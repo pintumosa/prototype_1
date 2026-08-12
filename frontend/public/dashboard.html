@@ -609,6 +609,7 @@
       if (val > chips) return window.WinzoAuth.toast(`Not enough chips! You have ${chips.toLocaleString("en-IN")}.`, "error", 4000);
       fresh.chips = chips - val; fresh.wallet = fresh.chips;
       window.WinzoAuth.saveUsers(users);
+      if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: fresh.chips }).eq("uid", session.uid).catch(()=>{});
       const newSet = { id:"s_"+Date.now(), gameId:"WZ-"+Math.random().toString(36).substr(2,7).toUpperCase(), uid:session.uid, byName:session.fullName.split(" ")[0], value:val, gameType:gt, at:Date.now() };
       // Optimistically add to local storage first so renderSets shows it immediately
       const arr = window.WinzoSets.get();
