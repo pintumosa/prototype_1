@@ -57,7 +57,8 @@ function mapResult(r) {
 }
 
 // ── Live readers (Supabase-first, localStorage fallback) ──────
-var _usersMemCache = null; // in-memory cache to avoid localStorage quota issues (base64 KYC images are large)
+var _usersMemCache = null;
+var _resultsMemCache = null;
 
 function _safeLocalSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); }
@@ -105,15 +106,15 @@ async function getLiveReportsAsync() {
 }
 async function getLiveResultsAsync() {
   const data = await sbFetch("results", "created_at", RESULT_COLS);
-  if (data) { const mapped = data.map(mapResult); _safeLocalSet("winzo_results", mapped); return mapped; }
-  try { return JSON.parse(localStorage.getItem("winzo_results") || "[]"); } catch(e) { return []; }
+  if (data) { const mapped = data.map(mapResult); _resultsMemCache = mapped; return mapped; }
+  return _resultsMemCache || [];
 }
 
 // Sync wrappers — panels call these, await result, then re-render
 function getLiveUsers()      { if (_usersMemCache) return _usersMemCache; try { return JSON.parse(localStorage.getItem("winzo_users") || "[]"); } catch(e) { return []; } }
 function getLiveSets()       { try { return JSON.parse(localStorage.getItem("winzo_sets_global") || "[]"); } catch(e) { return []; } }
 function getLiveReports()    { try { return JSON.parse(localStorage.getItem("winzo_reports") || "[]"); } catch(e) { return []; } }
-function getLiveResults()    { try { return JSON.parse(localStorage.getItem("winzo_results") || "[]"); } catch(e) { return []; } }
+function getLiveResults()    { return _resultsMemCache || []; }
 function getLiveDeposits()   { try { return JSON.parse(localStorage.getItem("winzo_deposits") || "[]"); } catch(e) { return []; } }
 function getLiveWithdrawals(){ try { return JSON.parse(localStorage.getItem("winzo_withdraws") || "[]"); } catch(e) { return []; } }
 function getLiveBlacklist()  { try { return JSON.parse(localStorage.getItem("winzo_blacklist") || "[]"); } catch(e) { return []; } }
