@@ -338,7 +338,7 @@
       const users = window.WinzoAuth.getUsers();
       const u = users.find(x => x.uid === uid);
       if (u) { u.chips = val; u.wallet = val; window.WinzoAuth.saveUsers(users); }
-      if (window.WINZO_SB) await window.WINZO_SB.from("users").update({ chips: val }).eq("uid", uid); } catch(e) {};
+      if (window.WINZO_SB) await window.WINZO_SB.from("users").update({ chips: val }).eq("uid", uid).catch(()=>{});
     }
 
     const GAME_LABELS = { full:"Full Game","1goti":"1 Goti","2goti":"2 Goti","3goti":"3 Goti",ulta:"Ulta Ludo","1six":"1 Six",snake:"Snake & Ladder","ulta-snake":"Ulta Snake & Ladder" };
@@ -465,7 +465,7 @@
       if (!window.WINZO_SB) return window.WinzoAuth.toast("No connection.", "error");
       // Cancel any existing pending request first
       if (_myPendingReqs[id]) {
-        await window.WINZO_SB.from("join_requests").update({status:"cancelled"}).eq("id", _myPendingReqs[id]); } catch(e) {};
+        await window.WINZO_SB.from("join_requests").update({status:"cancelled"}).eq("id", _myPendingReqs[id]).catch(()=>{});
       }
       const req = { id: "jr_"+Date.now(), challenge_id: id, requester_uid: session.uid, requester_name: session.fullName.split(" ")[0], status: "pending", created_at: new Date().toISOString() };
       const { error } = await window.WINZO_SB.from("join_requests").insert(req).catch(e => ({error:e}));
@@ -524,7 +524,7 @@
       if (!s || s.acceptedBy) { window.WinzoAuth.toast("Challenge already matched.", "error"); _removeJR(reqId); return; }
       // Deduct chips from requester
       const cur = await getChips(requesterUid);
-      if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {}; _removeJR(reqId); return; }
+      if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId).catch(()=>{}); _removeJR(reqId); return; }
       await setChips(requesterUid, cur - s.value);
       // Mark challenge as matched
       const req = _jrQueue.find(r => r.id === reqId);
@@ -535,8 +535,8 @@
       _lastSetsHash = ""; _lastMatchHash = "";
       // Accept this request, reject all others for same challenge
       if (window.WINZO_SB) {
-        await window.WINZO_SB.from("join_requests").update({status:"accepted"}).eq("id",reqId); } catch(e) {};
-        await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("challenge_id",challengeId).eq("status","pending").neq("id",reqId); } catch(e) {};
+        await window.WINZO_SB.from("join_requests").update({status:"accepted"}).eq("id",reqId).catch(()=>{});
+        await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("challenge_id",challengeId).eq("status","pending").neq("id",reqId).catch(()=>{});
         window.WinzoSets.saveOne(s);
       }
       _jrQueue = _jrQueue.filter(r => r.challenge_id !== challengeId);
@@ -548,7 +548,7 @@
 
     window.declineJoinRequest = async function(reqId) {
       clearInterval(_jrTimers[reqId]); delete _jrTimers[reqId];
-      if (window.WINZO_SB) await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {};
+      if (window.WINZO_SB) await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId).catch(()=>{});
       _removeJR(reqId);
     };
 
@@ -567,7 +567,7 @@
       if (s.uid !== session.uid) return window.WinzoAuth.toast("Not your challenge.", "error");
       if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
       try {
-        if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id); } catch(e) {}
+        if (window.WINZO_SB) await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id).catch(()=>{});
         const cur = await getChips(s.uid);
         await setChips(s.uid, cur + s.value);
         await window.WinzoSets.delete(id);
@@ -596,7 +596,7 @@
       if (val > chips) return window.WinzoAuth.toast(`Not enough chips! You have ${chips.toLocaleString("en-IN")}.`, "error", 4000);
       fresh.chips = chips - val; fresh.wallet = fresh.chips;
       window.WinzoAuth.saveUsers(users);
-      if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: fresh.chips }).eq("uid", session.uid); } catch(e) {};
+      if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: fresh.chips }).eq("uid", session.uid).catch(()=>{});
       const newSet = { id:"s_"+Date.now(), gameId:"WZ-"+Math.random().toString(36).substr(2,7).toUpperCase(), uid:session.uid, byName:session.fullName.split(" ")[0], value:val, gameType:gt, at:Date.now() };
       // Optimistically add to local storage first so renderSets shows it immediately
       const arr = window.WinzoSets.get();
@@ -741,7 +741,7 @@
       if (!s) return;
       if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
       if (s.uid !== session.uid) return;
-      if (window.WINZO_SB) await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id); } catch(e) {};
+      if (window.WINZO_SB) await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id).catch(()=>{});
       const cur = await getChips(s.uid);
       await setChips(s.uid, cur + s.value);
       await window.WinzoSets.delete(id);
