@@ -407,8 +407,6 @@
         if (r.status === "accepted") {
           delete _myPendingReqs[r.challenge_id];
           window.WinzoAuth.toast("Matched! Game on.", "success");
-          // Clear local cache so getAsync fetches fresh from Supabase
-          localStorage.removeItem("winzo_sets_global");
           const arr = await window.WinzoSets.getAsync(); _lastSetsHash=""; _lastMatchHash=""; _paintSets(arr); _paintMatchRoom(arr);
         } else if (r.status === "rejected" || r.status === "cancelled") {
           delete _myPendingReqs[r.challenge_id];
