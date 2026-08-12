@@ -326,6 +326,21 @@
     const session = window.WinzoAuth.requireAuth();
     if (!session) throw new Error("not authed");
 
+    async function getChips(uid) {
+      if (window.WINZO_SB) {
+        const { data } = await window.WINZO_SB.from("users").select("chips").eq("uid", uid).maybeSingle().catch(()=>({data:null}));
+        if (data) return Number(data.chips || 0);
+      }
+      const u = window.WinzoAuth.getUsers().find(x => x.uid === uid);
+      return Number(u && (u.chips ?? u.wallet) || 0);
+    }
+    async function setChips(uid, val) {
+      const users = window.WinzoAuth.getUsers();
+      const u = users.find(x => x.uid === uid);
+      if (u) { u.chips = val; u.wallet = val; window.WinzoAuth.saveUsers(users); }
+      if (window.WINZO_SB) await window.WINZO_SB.from("users").update({ chips: val }).eq("uid", uid).catch(()=>{});
+    }
+
     const GAME_LABELS = { full:"Full Game","1goti":"1 Goti","2goti":"2 Goti","3goti":"3 Goti",ulta:"Ulta Ludo","1six":"1 Six",snake:"Snake & Ladder","ulta-snake":"Ulta Snake & Ladder" };
 
     async function refreshView() {
@@ -352,6 +367,8 @@
     document.querySelectorAll("[data-user-name]").forEach(el => el.textContent = session.fullName.split(" ")[0]);
     refreshView();
     window.WinzoSets.getAsync().then(function(arr) { _paintSets(arr); _paintMatchRoom(arr); });
+    _subscribeJoinRequests();
+    _subscribeMyRequests();
 
     // Single poll every 10s — fetches sets + refreshes user every 3rd tick (30s)
     var _pollCount = 0;
@@ -396,25 +413,142 @@
     window.acceptSet = async function(id) {
       const arr = await window.WinzoSets.getAsync();
       const s = arr.find(x => x.id === id);
-      if (!s || s.acceptedBy) return window.WinzoAuth.toast("Challenge already taken!", "error");
-      if (s.uid === session.uid) return window.WinzoAuth.toast("You cannot accept your own challenge.", "error");
-      const users = window.WinzoAuth.getUsers();
-      const fresh = users.find(u => u.uid === session.uid);
+      if (!s || s.acceptedBy) return window.WinzoAuth.toast("Challenge already matched!", "error");
+      if (s.uid === session.uid) return window.WinzoAuth.toast("You cannot join your own challenge.", "error");
+      const fresh = window.WinzoAuth.getUsers().find(u => u.uid === session.uid);
       if (!fresh || !fresh.kycVerified) return window.WinzoAuth.toast("Account pending approval.", "error");
       const chips = Number(fresh.chips ?? fresh.wallet ?? 0);
       if (chips < s.value) return window.WinzoAuth.toast(`Not enough chips! You have ${chips.toLocaleString("en-IN")}.`, "error", 4000);
-      fresh.chips = chips - s.value; fresh.wallet = fresh.chips;
-      window.WinzoAuth.saveUsers(users);
-      s.acceptedBy = session.uid; s.acceptedByName = session.fullName.split(" ")[0]; s.acceptedAt = Date.now();
-      // Update local cache immediately so match room shows without waiting for Supabase
-      localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
-      _lastSetsHash = ""; _lastMatchHash = "";
-      window.WinzoAuth.toast("Challenge accepted! Contact admin for match room.", "success");
-      renderSets();
-      renderMatchRoom();
-      // Persist to Supabase in background
-      window.WinzoSets.saveOne(s);
+      if (!window.WINZO_SB) return window.WinzoAuth.toast("No connection.", "error");
+      // Check if already sent a pending request
+      const { data: existing } = await window.WINZO_SB.from("join_requests").select("id,status").eq("challenge_id", id).eq("requester_uid", session.uid).eq("status","pending").maybeSingle().catch(()=>({data:null}));
+      if (existing) return window.WinzoAuth.toast("Request already sent. Waiting for player to accept.", "info", 3000);
+      const req = { id: "jr_"+Date.now(), challenge_id: id, requester_uid: session.uid, requester_name: session.fullName.split(" ")[0], status: "pending", created_at: new Date().toISOString() };
+      await window.WINZO_SB.from("join_requests").insert(req).catch(()=>{});
+      window.WinzoAuth.toast("Request sent! Waiting for player to accept…", "success", 3000);
     };
+
+    // ── Join Request Queue (shown to challenge setter) ──────────────────────
+    var _jrTimers = {}; // requestId -> countdown interval
+    var _jrQueue = []; // pending requests for my open challenges
+
+    function _renderJRQueue() {
+      let el = document.getElementById("jr-queue");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "jr-queue";
+        el.style.cssText = "position:fixed;top:70px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:320px;width:calc(100vw - 32px);";
+        document.body.appendChild(el);
+      }
+      el.innerHTML = _jrQueue.map(r => `
+        <div id="jrcard-${r.id}" style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 16px;box-shadow:0 4px 24px rgba(0,0,0,0.5);">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px;"><i class="ph-fill ph-sword" style="color:var(--accent);"></i> Join Request</div>
+          <div style="font-weight:700;margin-bottom:10px;"><span style="color:var(--accent);">${r.requester_name}</span> wants to play your ₹${Number(r._value).toLocaleString("en-IN")} challenge</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" style="flex:1;padding:8px;" onclick="acceptJoinRequest('${r.id}','${r.challenge_id}','${r.requester_uid}')"><i class="ph-fill ph-check"></i> Accept</button>
+            <button class="btn btn-secondary" style="flex:1;padding:8px;" onclick="declineJoinRequest('${r.id}')"><i class="ph ph-x"></i> Decline</button>
+            <span id="jrtimer-${r.id}" style="font-size:13px;font-weight:700;color:var(--accent);min-width:24px;text-align:right;">10</span>
+          </div>
+        </div>`).join("");
+      // start countdowns
+      _jrQueue.forEach(r => {
+        if (_jrTimers[r.id]) return;
+        let t = 10;
+        _jrTimers[r.id] = setInterval(function() {
+          t--;
+          const el = document.getElementById("jrtimer-"+r.id);
+          if (el) el.textContent = t;
+          if (t <= 0) { clearInterval(_jrTimers[r.id]); delete _jrTimers[r.id]; declineJoinRequest(r.id); }
+        }, 1000);
+      });
+    }
+
+    window.acceptJoinRequest = async function(reqId, challengeId, requesterUid) {
+      clearInterval(_jrTimers[reqId]); delete _jrTimers[reqId];
+      const arr = await window.WinzoSets.getAsync();
+      const s = arr.find(x => x.id === challengeId);
+      if (!s || s.acceptedBy) { window.WinzoAuth.toast("Challenge already matched.", "error"); _removeJR(reqId); return; }
+      // Deduct chips from requester
+      const cur = await getChips(requesterUid);
+      if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId).catch(()=>{}); _removeJR(reqId); return; }
+      await setChips(requesterUid, cur - s.value);
+      // Mark challenge as matched
+      const req = _jrQueue.find(r => r.id === reqId);
+      s.acceptedBy = requesterUid; s.acceptedByName = req ? req.requester_name : "Player"; s.acceptedAt = Date.now();
+      const localArr = window.WinzoSets.get();
+      const li = localArr.findIndex(x => x.id === challengeId);
+      if (li >= 0) localArr[li] = s; localStorage.setItem("winzo_sets_global", JSON.stringify(localArr));
+      _lastSetsHash = ""; _lastMatchHash = "";
+      // Accept this request, reject all others for same challenge
+      if (window.WINZO_SB) {
+        await window.WINZO_SB.from("join_requests").update({status:"accepted"}).eq("id",reqId).catch(()=>{});
+        await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("challenge_id",challengeId).eq("status","pending").neq("id",reqId).catch(()=>{});
+        window.WinzoSets.saveOne(s);
+      }
+      _jrQueue = _jrQueue.filter(r => r.challenge_id !== challengeId);
+      Object.keys(_jrTimers).forEach(k => { if (_jrQueue.findIndex(r=>r.id===k)<0) { clearInterval(_jrTimers[k]); delete _jrTimers[k]; } });
+      _renderJRQueue();
+      window.WinzoAuth.toast("Matched! Game on.", "success");
+      renderSets(); renderMatchRoom();
+    };
+
+    window.declineJoinRequest = async function(reqId) {
+      clearInterval(_jrTimers[reqId]); delete _jrTimers[reqId];
+      if (window.WINZO_SB) await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId).catch(()=>{});
+      _removeJR(reqId);
+    };
+
+    function _removeJR(reqId) {
+      _jrQueue = _jrQueue.filter(r => r.id !== reqId);
+      _renderJRQueue();
+    }
+
+    // Subscribe to join_requests for my open challenges
+    async function _subscribeJoinRequests() {
+      if (!window.WINZO_SB) return;
+      const arr = await window.WinzoSets.getAsync();
+      const myChallengeIds = arr.filter(s => s.uid === session.uid && !s.acceptedBy).map(s => s.id);
+      if (!myChallengeIds.length) return;
+      window.WINZO_SB.channel("join_requests_"+session.uid)
+        .on("postgres_changes", { event:"INSERT", schema:"public", table:"join_requests" }, async function(payload) {
+          const r = payload.new;
+          if (!myChallengeIds.includes(r.challenge_id)) return;
+          if (r.status !== "pending") return;
+          // attach challenge value for display
+          const sets = await window.WinzoSets.getAsync();
+          const s = sets.find(x => x.id === r.challenge_id);
+          r._value = s ? s.value : "?";
+          if (!_jrQueue.find(x => x.id === r.id)) { _jrQueue.push(r); _renderJRQueue(); }
+        })
+        .on("postgres_changes", { event:"UPDATE", schema:"public", table:"join_requests" }, function(payload) {
+          const r = payload.new;
+          if (r.status !== "pending") { _removeJR(r.id); }
+        })
+        .subscribe();
+      // Also poll for existing pending requests (in case page was refreshed)
+      const { data } = await window.WINZO_SB.from("join_requests").select("*").in("challenge_id", myChallengeIds).eq("status","pending").catch(()=>({data:[]}));
+      if (data && data.length) {
+        const sets = await window.WinzoSets.getAsync();
+        data.forEach(r => {
+          const s = sets.find(x => x.id === r.challenge_id);
+          r._value = s ? s.value : "?";
+          if (!_jrQueue.find(x => x.id === r.id)) _jrQueue.push(r);
+        });
+        _renderJRQueue();
+      }
+    }
+
+    // Subscribe to own join_requests status (requester side — get notified of rejection)
+    function _subscribeMyRequests() {
+      if (!window.WINZO_SB) return;
+      window.WINZO_SB.channel("my_jr_"+session.uid)
+        .on("postgres_changes", { event:"UPDATE", schema:"public", table:"join_requests", filter:`requester_uid=eq.${session.uid}` }, function(payload) {
+          const r = payload.new;
+          if (r.status === "rejected") window.WinzoAuth.toast("Your join request was declined or challenge was matched.", "error", 3000);
+          if (r.status === "accepted") { window.WinzoAuth.toast("Matched! Game on.", "success"); window.WinzoSets.getAsync().then(arr => { _paintSets(arr); _paintMatchRoom(arr); }); }
+        })
+        .subscribe();
+    }
 
     window.cancelSet = async function(id) {
       const arr = await window.WinzoSets.getAsync();
