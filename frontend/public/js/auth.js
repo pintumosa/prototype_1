@@ -169,15 +169,7 @@ async function wzSignup(payload) {
       if (error) throw new Error(error.message);
       if (data?.user?.id) uid = data.user.id;
       sbToken = data?.session?.access_token || null;
-      // Auto-confirm email so user can sign in immediately (no email verification friction)
-      try {
-        await fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/auto-confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.WINZO_ENV.SUPABASE_ANON_KEY },
-          body: JSON.stringify({ uid })
-        });
-      } catch(e) { console.warn("Auto-confirm failed:", e.message); }
-      // Get a real session token after confirmation so DB insert passes RLS
+      // Get a real session token after confirmation so KYC uploads work
       if (!sbToken) {
         try {
           const { data: signInData } = await window.WINZO_SB.auth.signInWithPassword({ email: payload.email, password: payload.password });
@@ -219,25 +211,24 @@ async function wzSignup(payload) {
     createdAt: new Date().toISOString()
   };
 
-  // ── Supabase DB ──
+  // ── Supabase DB insert via edge function (service role bypasses RLS) ──
   if (window.WINZO_SB) {
     try {
-      const sbClient = sbToken
-        ? window.supabase.createClient(window.WINZO_ENV.SUPABASE_URL, window.WINZO_ENV.SUPABASE_ANON, { global: { headers: { Authorization: "Bearer " + sbToken } } })
-        : window.WINZO_SB;
-      await sbClient.from("users").insert({
-        uid, full_name: payload.fullName, phone: payload.phone,
-        email: payload.email, kyc_type: payload.kycType,
-        aadhaar_number: payload.aadhaarNumber || null,
-        pan_number: payload.panNumber || null,
-        kyc_url: kycResult.kycUrl, kyc_key: kycResult.kycKey,
-        kyc_back_url: kycBackResult.kycUrl,
-        kyc_back_key: kycBackResult.kycKey,
-        pan_url: panResult.kycUrl, pan_key: panResult.kycKey,
-        kyc_verified: false,
-        chips: 0, created_at: new Date().toISOString()
+      const res = await fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/auto-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.WINZO_ENV.SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          uid, full_name: payload.fullName, phone: payload.phone,
+          email: payload.email, kyc_type: payload.kycType,
+          aadhaar_number: payload.aadhaarNumber || null,
+          pan_number: payload.panNumber || null,
+          kyc_url: kycResult.kycUrl, kyc_key: kycResult.kycKey,
+          kyc_back_url: kycBackResult.kycUrl, kyc_back_key: kycBackResult.kycKey,
+          pan_url: panResult.kycUrl, pan_key: panResult.kycKey
+        })
       });
-    } catch(e) { if (window.wzReportError) wzReportError("Supabase DB insert failed: " + e.message); else console.warn("Supabase DB insert failed: " + e.message); }
+      if (!res.ok) { const e = await res.json(); console.warn("auto-confirm/insert failed:", e.error); }
+    } catch(e) { console.warn("auto-confirm edge fn failed:", e.message); }
   }
 
   const users = wzGetUsers();
