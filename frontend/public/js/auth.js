@@ -218,7 +218,7 @@ async function wzSignup(payload) {
   if (window.WINZO_SB && (kycResult.kycUrl || kycBackResult.kycUrl || panResult.kycUrl)) {
     try {
       await window.WINZO_SB.from("users").update({
-        kyc_url: kycResult.kycUrl, kyc_key: kycResult.kycKey,
+        kyc_url: kycResult.kycUrl,
         kyc_back_url: kycBackResult.kycUrl, kyc_back_key: kycBackResult.kycKey,
         pan_url: panResult.kycUrl, pan_key: panResult.kycKey
       }).eq("uid", uid);
