@@ -528,7 +528,7 @@
         if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {} _removeJR(reqId); return; }
         await setChips(requesterUid, cur - s.value);
         const req = _jrQueue.find(r => r.id === reqId);
-        s.acceptedBy = requesterUid; s.acceptedByName = req ? req.requester_name : "Player"; s.acceptedAt = Date.now();
+        s.acceptedBy = requesterUid; s.acceptedByName = req ? req.requester_name : "Player"; s.acceptedAt = new Date().toISOString();
         const localArr = window.WinzoSets.get();
         const li = localArr.findIndex(x => x.id === challengeId);
         if (li >= 0) localArr[li] = s; localStorage.setItem("winzo_sets_global", JSON.stringify(localArr));
@@ -542,7 +542,7 @@
         Object.keys(_jrTimers).forEach(k => { if (_jrQueue.findIndex(r=>r.id===k)<0) { clearInterval(_jrTimers[k]); delete _jrTimers[k]; } });
         _renderJRQueue();
         window.WinzoAuth.toast("Matched! Game on.", "success");
-        renderSets(); renderMatchRoom();
+        const fresh = await window.WinzoSets.getAsync(); _lastSetsHash=""; _lastMatchHash=""; _paintSets(fresh); _paintMatchRoom(fresh);
       } catch(e) { window.WinzoAuth.toast("Accept failed: " + e.message, "error", 5000); console.error("acceptJoinRequest error:", e); }
     };
 
