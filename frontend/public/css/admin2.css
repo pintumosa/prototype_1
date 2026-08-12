@@ -54,6 +54,7 @@ body { padding-bottom: 0 !important; }
   overflow-y: auto;
   z-index: 200;
   transition: transform 0.3s ease;
+  transform: translateX(0);
 }
 .a2-sidebar-logo {
   display: flex;
