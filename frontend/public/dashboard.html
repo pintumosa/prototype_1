@@ -434,7 +434,8 @@
         await window.WINZO_SB.from("join_requests").update({status:"cancelled"}).eq("id", _myPendingReqs[id]).catch(()=>{});
       }
       const req = { id: "jr_"+Date.now(), challenge_id: id, requester_uid: session.uid, requester_name: session.fullName.split(" ")[0], status: "pending", created_at: new Date().toISOString() };
-      await window.WINZO_SB.from("join_requests").insert(req).catch(()=>{});
+      const { error } = await window.WINZO_SB.from("join_requests").insert(req).catch(e => ({error:e}));
+      if (error) { console.error("join_requests insert error:", error); return window.WinzoAuth.toast("Failed to send request: " + (error.message||"unknown error"), "error", 5000); }
       _myPendingReqs[id] = req.id;
       _lastSetsHash = "";
       _paintSets(window.WinzoSets.get());
