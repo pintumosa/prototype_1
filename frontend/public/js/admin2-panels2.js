@@ -245,7 +245,7 @@ ${deps.length ? deps.map(function(d,i){return `<tr><td>${i+1}</td><td style="fon
 
 PANELS["recent-withdrawals"] = function() {
   const all = getLiveWithdrawals();
-  const pending = all.filter(function(w){return w.status==="pending";});
+  const pending = all.filter(function(w){return w.status==="pending";}).slice().reverse();
   return `<div class="a2-panel-head"><h2><i class="ph ph-arrow-up-right"></i> Recent Withdrawal Requests</h2><span class="badge badge-yellow">${pending.length} Pending</span></div>
 <div class="a2-table-wrap"><table class="a2-table"><thead><tr><th>#</th><th>Txn ID</th><th>User</th><th>Phone</th><th>Amount</th><th>Method</th><th>UPI ID</th><th>Requested At</th><th>Status</th><th>Actions</th></tr></thead><tbody>
 ${all.length ? all.slice().reverse().map(function(w,i){
