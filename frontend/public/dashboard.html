@@ -634,10 +634,13 @@
     var _lastMatchHash = "";
     function _paintMatchRoom(arr) {
       const results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
+      const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
       const match = arr.find(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid))
-                 || arr.find(s => !s.acceptedBy && s.uid === session.uid);
+                 || (storedMatchId ? arr.find(s => s.id === storedMatchId) : null)
+                 || (!storedMatchId ? arr.find(s => !s.acceptedBy && s.uid === session.uid) : null);
       const submitted = match ? !!results.find(r => r.challengeId === match.id && r.submitterUid === session.uid) : false;
-      const hash = match ? (match.id + "|" + (match.acceptedBy||"pending") + "|" + (match.roomCode||"") + "|" + (match.startedAt||"") + "|" + submitted) : "none";
+      const gameEnded = match ? localStorage.getItem("wz_game_ended_"+match.id+"_"+session.uid) === "1" : false;
+      const hash = match ? (match.id + "|" + (match.acceptedBy||"pending") + "|" + (match.roomCode||"") + "|" + (match.startedAt||"") + "|" + submitted + "|" + gameEnded) : "none";
       if (hash === _lastMatchHash) return;
       _lastMatchHash = hash;
       _renderMatchRoomWithArr(arr);
@@ -647,11 +650,11 @@
       const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
       // Primary: find matched challenge for this user
       let match = arr.find(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid));
-      // Fallback: use stored match ID (covers Player B cache loss + filtered-out completed challenges)
+      // Fallback: use stored match ID
       if (!match && storedMatchId) match = arr.find(s => s.id === storedMatchId);
-      // If no matched game, show pending challenge
-      if (!match) match = arr.find(s => !s.acceptedBy && s.uid === session.uid);
-      // Persist matched challenge ID — only clear when user explicitly ends game
+      // Only show pending state if no matched game AND no stored match ID
+      if (!match && !storedMatchId) match = arr.find(s => !s.acceptedBy && s.uid === session.uid);
+      // Persist matched challenge ID — only cleared when Game Ended clicked
       if (match && match.acceptedBy) localStorage.setItem("wz_my_match_"+session.uid, match.id);
       const section = document.getElementById("match-room-section");
       const card = document.getElementById("match-room-card");
