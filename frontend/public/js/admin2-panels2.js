@@ -244,11 +244,11 @@ ${deps.length ? deps.map(function(d,i){return `<tr><td>${i+1}</td><td style="fon
 };
 
 PANELS["recent-withdrawals"] = function() {
-  const all = getLiveWithdrawals();
-  const pending = all.filter(function(w){return w.status==="pending";}).sort(function(a,b){return new Date(b.time||0)-new Date(a.time||0);});
+  const all = getLiveWithdrawals().slice().sort(function(a,b){return new Date(b.time||0)-new Date(a.time||0);});
+  const pending = all.filter(function(w){return w.status==="pending";});
   return `<div class="a2-panel-head"><h2><i class="ph ph-arrow-up-right"></i> Recent Withdrawal Requests</h2><span class="badge badge-yellow">${pending.length} Pending</span></div>
 <div class="a2-table-wrap"><table class="a2-table"><thead><tr><th>#</th><th>Txn ID</th><th>User</th><th>Phone</th><th>Amount</th><th>Method</th><th>UPI ID</th><th>Requested At</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-${all.length ? all.slice().reverse().map(function(w,i){
+${all.length ? all.map(function(w,i){
   const actions = w.status === "pending"
     ? `<td style="display:flex;gap:6px;">
         <button class="btn btn-primary" style="padding:5px 10px;font-size:11px;" onclick="approveWithdrawRequest('${w.id}')"><i class="ph ph-check"></i> Approve</button>
