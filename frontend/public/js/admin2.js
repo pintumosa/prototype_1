@@ -215,13 +215,16 @@ window.approveDepositRequest = function(id) {
   if (!d) return;
   d.status = "success";
   var users = getLiveUsers();
-  var u = users.find(function(x){ return x.fullName === d.user || x.phone === d.userPhone || x.email === d.userEmail; });
-  if (u) { u.chips = (Number(u.chips) || 0) + Number(d.amount); u.wallet = u.chips; saveLiveUsers(users); }
-  try { localStorage.setItem("winzo_deposits", JSON.stringify(deps)); } catch(e) {}
-  if (window.WINZO_SB) {
-    window.WINZO_SB.from("deposits").update({ status:"success" }).eq("id", id).then(function(){});
+  var u = users.find(function(x){ return (d.uid && x.uid === d.uid) || x.fullName === d.user || x.phone === d.userPhone || x.email === d.userEmail; });
+  if (u) {
+    u.chips = (Number(u.chips) || 0) + Number(d.amount);
+    u.wallet = u.chips;
+    saveLiveUsers(users);
+    if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", u.uid).then(function(){});
   }
-  showToast("Approved & " + d.amount + " chips credited to " + d.user, "success");
+  try { localStorage.setItem("winzo_deposits", JSON.stringify(deps)); } catch(e) {}
+  if (window.WINZO_SB) window.WINZO_SB.from("deposits").update({ status:"success" }).eq("id", id).then(function(){});
+  showToast("Approved & ₹" + Number(d.amount).toLocaleString("en-IN") + " chips credited to " + d.user, "success");
   window.syncAndReload("new-deposit-requests", "New Deposit Requests");
 };
 
