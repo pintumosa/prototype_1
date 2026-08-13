@@ -185,20 +185,29 @@ PANELS["deposit-detail"] = function() {
   var id = window._depositDetailId;
   var d = getLiveDeposits().find(function(x){ return x.id === id; });
   if (!d) return '<div style="padding:40px;text-align:center;color:var(--text-muted);">Deposit not found.</div>';
+  var storjKey = d.proofUrl ? (d.proofUrl.match(/\/storj\/(.+?)(?:\?|$)/)?.[1] || null) : null;
+  var screenshotBtn = d.proofUrl
+    ? "<button class='btn btn-secondary' style='width:100%;padding:8px;font-size:13px;margin-top:4px;' onclick=\""+(storjKey?"adminViewKyc('"+storjKey+"')":"adminShowDocModal('"+d.proofUrl+"')")+"\"><i class='ph ph-image'></i> View Screenshot</button>"
+    : "<div style='color:var(--text-muted);font-size:13px;'>No screenshot uploaded</div>";
   return `<div class="a2-panel-head"><h2><i class="ph ph-arrow-down-left"></i> Deposit Request</h2>
     <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px;" onclick="window.syncAndReload('new-deposit-requests','New Deposit Requests')"><i class="ph ph-arrow-left"></i> All Requests</button>
   </div>
   <div style="max-width:480px;margin:32px auto;background:var(--card);border-radius:12px;padding:28px 32px;display:flex;flex-direction:column;gap:14px;">
-    <div style="font-size:20px;font-weight:700;">${d.user||"—"}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:20px;font-weight:700;">${d.user||"—"}</div>
+      ${d.uid ? `<button class="btn btn-secondary" style="font-size:12px;padding:5px 12px;" onclick="adminViewUserProfile('${d.uid}')"><i class="ph ph-user"></i> View Profile</button>` : ""}
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:14px;">
       <div><span style="color:var(--text-muted);">Phone</span><br><strong>${d.userPhone||"—"}</strong></div>
       <div><span style="color:var(--text-muted);">Email</span><br><strong>${d.userEmail||"—"}</strong></div>
       <div><span style="color:var(--text-muted);">Amount</span><br><strong style="color:var(--accent);font-size:18px;">${rupee(d.amount)}</strong></div>
       <div><span style="color:var(--text-muted);">Method</span><br><strong>${d.method||"—"}</strong></div>
-      <div><span style="color:var(--text-muted);">Txn ID / UTR</span><br><strong style="font-family:monospace;">${d.txnId||"—"}</strong></div>
+      <div style="grid-column:1/-1;"><span style="color:var(--text-muted);">Txn ID / UTR</span><br><strong style="font-family:monospace;font-size:15px;">${d.txnId||"—"}</strong></div>
       <div><span style="color:var(--text-muted);">Requested At</span><br><strong>${fmtTime(d.time)}</strong></div>
+      <div><span style="color:var(--text-muted);">Status</span><br>${statusBadge(d.status||"pending")}</div>
     </div>
-    <div style="display:flex;gap:12px;margin-top:8px;">
+    <div>${screenshotBtn}</div>
+    <div style="display:flex;gap:12px;margin-top:4px;">
       <button class="btn btn-primary" style="flex:1;padding:10px;font-size:14px;" onclick="approveDepositRequest('${d.id}')"><i class="ph ph-check"></i> Approve</button>
       <button class="btn btn-secondary" style="flex:1;padding:10px;font-size:14px;color:var(--danger);border-color:var(--danger);" onclick="rejectDepositRequest('${d.id}')"><i class="ph ph-x"></i> Reject</button>
     </div>

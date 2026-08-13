@@ -38,7 +38,7 @@ function mapSet(r) {
 function mapDeposit(r) {
   return { id:r.id, uid:r.uid, user:r.user_name, userPhone:r.user_phone,
     userEmail:r.user_email, amount:r.amount, type:"Deposit",
-    method:r.method, txnId:r.txn_id, status:r.status, time:r.created_at };
+    method:r.method, txnId:r.txn_id, proofUrl:r.proof_url||null, status:r.status, time:r.created_at };
 }
 function mapWithdraw(r) {
   return { id:r.id, uid:r.uid, user:r.user_name, userPhone:r.user_phone,
@@ -81,7 +81,7 @@ async function getLiveUserFullAsync(uid) {
   } catch(e) { return _usersMemCache ? _usersMemCache.find(function(u){ return u.uid === uid; }) || null : null; }
 }
 var SET_COLS     = "id,game_id,uid,by_name,value,game_type,accepted_by,accepted_by_name,accepted_at,room_code,started_at,started_by,at,status,cancelled_by,cancelled_at";
-var DEPOSIT_COLS = "id,uid,user_name,user_phone,user_email,amount,method,txn_id,status,created_at";
+var DEPOSIT_COLS = "id,uid,user_name,user_phone,user_email,amount,method,txn_id,proof_url,status,created_at";
 var WITHDRAW_COLS= "id,uid,user_name,user_phone,user_email,amount,method,upi_id,status,created_at";
 var REPORT_COLS  = "id,reporter_uid,reporter_name,opponent,details,proof_url,status,created_at";
 var RESULT_COLS  = "id,challenge_id,game_id,submitter_uid,submitter_name,submitter_phone,opponent_uid,opponent_name,opponent_phone,game_type,amount,room_code,result,proof_url,screenshot_at,status,created_at";
