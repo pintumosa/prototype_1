@@ -744,7 +744,15 @@ window.showAddBlacklist = function () {
     if (badge) { badge.textContent = unseen.length; badge.style.display = unseen.length > 0 ? "flex" : "none"; }
     var items = document.querySelectorAll(".a2-notif-item");
     items.forEach(function(el) { el.classList.add("seen"); });
-    if (panel) window.syncAndReload(panel, label, targetId);
+    if (panel) {
+      if (targetId) {
+        window._depositDetailId = targetId;
+        window._highlightTarget = null;
+        window.loadPanel("deposit-detail", "Deposit Request");
+      } else {
+        window.syncAndReload(panel, label);
+      }
+    }
   };
 
   window.toggleNotifDropdown = function() {
