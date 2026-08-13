@@ -407,6 +407,10 @@
         if (r.status === "accepted") {
           delete _myPendingReqs[r.challenge_id];
           window.WinzoAuth.toast("Matched! Game on.", "success");
+          // Force fresh fetch from Supabase by clearing stale local cache entry
+          const cached = window.WinzoSets.get();
+          const ci = cached.findIndex(x => x.id === r.challenge_id);
+          if (ci >= 0) { cached[ci].acceptedBy = session.uid; localStorage.setItem("winzo_sets_global", JSON.stringify(cached)); }
           const arr = await window.WinzoSets.getAsync(); _lastSetsHash=""; _lastMatchHash=""; _paintSets(arr); _paintMatchRoom(arr);
         } else if (r.status === "rejected" || r.status === "cancelled") {
           delete _myPendingReqs[r.challenge_id];
