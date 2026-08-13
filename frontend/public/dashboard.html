@@ -378,24 +378,7 @@
       _pollCount++;
       window.WinzoSets.getAsync().then(function(merged) { _paintSets(merged); _paintMatchRoom(merged); });
       if (_pollCount % 3 === 0) refreshView();
-    }, 2000);
-
-    // Fast 2s poll for match room updates (room code, startedAt) when matched
-    setInterval(function() {
-      if (document.hidden) return;
-      const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
-      if (!storedMatchId || !window.WINZO_SB) return;
-      window.WINZO_SB.from("challenges").select("room_code,started_at,status").eq("id", storedMatchId).maybeSingle().then(function(res) {
-        if (!res.data) return;
-        const arr = window.WinzoSets.get();
-        const s = arr.find(x => x.id === storedMatchId);
-        if (!s) return;
-        let changed = false;
-        if (res.data.room_code && res.data.room_code !== s.roomCode) { s.roomCode = res.data.room_code; changed = true; }
-        if (res.data.started_at && res.data.started_at !== s.startedAt) { s.startedAt = res.data.started_at; changed = true; }
-        if (changed) { localStorage.setItem("winzo_sets_global", JSON.stringify(arr)); _lastMatchHash = ""; _paintMatchRoom(arr); }
-      }).catch(function(){});
-    }, 2000);
+    }, 10000);
 
     // Poll for incoming join requests (Player A) every 3s
     setInterval(async function() {
@@ -593,15 +576,6 @@
 
     // Subscribe to join_requests for my open challenges
     function _subscribeMyRequests() {} // replaced by polling
-
-    // Realtime subscription on challenges table for instant updates
-    if (window.WINZO_SB) {
-      window.WINZO_SB.channel("challenges-live")
-        .on("postgres_changes", { event: "*", schema: "public", table: "challenges" }, function() {
-          window.WinzoSets.getAsync().then(function(arr) { _paintSets(arr); _paintMatchRoom(arr); });
-        })
-        .subscribe();
-    }
 
     window.cancelSet = async function(id) {
       const arr = await window.WinzoSets.getAsync();
