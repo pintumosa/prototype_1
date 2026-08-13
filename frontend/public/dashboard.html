@@ -658,26 +658,7 @@
       if (match && match.acceptedBy) localStorage.setItem("wz_my_match_"+session.uid, match.id);
       const section = document.getElementById("match-room-section");
       const card = document.getElementById("match-room-card");
-      if (!match) { section.hidden = true; return; }
-      // Pending — waiting for opponent
-      if (!match.acceptedBy) {
-        const label = GAME_LABELS[match.gameType] || match.gameType;
-        section.hidden = false;
-        card.innerHTML = `
-          <div style="margin-bottom:18px;">
-            <span class="eyebrow"><i class="ph-fill ph-hourglass" style="color:var(--accent);"></i> Waiting for Opponent</span>
-            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:16px;">
-              <div><div style="font-size:11px;color:var(--text-muted);">Game ID</div><div style="font-weight:700;color:var(--accent);letter-spacing:1px;">${match.gameId||match.id}</div></div>
-              <div><div style="font-size:11px;color:var(--text-muted);">Game</div><div style="font-weight:700;">${label}</div></div>
-              <div><div style="font-size:11px;color:var(--text-muted);">Amount</div><div style="font-weight:700;color:var(--accent);">₹${Number(match.value).toLocaleString("en-IN")}</div></div>
-            </div>
-          </div>
-          <p style="color:var(--text-muted);font-size:13px;margin-bottom:18px;"><i class="ph ph-clock"></i> Waiting for another player to accept your challenge…</p>
-          <button class="btn btn-secondary" onclick="cancelPendingSet('${match.id}')">
-            <i class="ph ph-x-circle"></i> Cancel Challenge
-          </button>`;
-        return;
-      }
+      if (!match || !match.acceptedBy) { section.hidden = true; return; }
       // Already submitted result
       const alreadySubmitted = results.find(r => r.challengeId === match.id && r.submitterUid === session.uid);
       if (alreadySubmitted) {
