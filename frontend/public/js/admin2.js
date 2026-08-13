@@ -757,13 +757,8 @@ window.showAddBlacklist = function () {
     var items = document.querySelectorAll(".a2-notif-item");
     items.forEach(function(el) { el.classList.add("seen"); });
     if (panel) {
-      if (targetId) {
-        window._depositDetailId = targetId;
-        window._highlightTarget = null;
-        window.loadPanel("deposit-detail", "Deposit Request");
-      } else {
-        window.syncAndReload(panel, label);
-      }
+      if (targetId) window._highlightTarget = targetId;
+      window.syncAndReload(panel, label, targetId);
     }
   };
 
