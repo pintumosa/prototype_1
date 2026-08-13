@@ -196,7 +196,16 @@ window.rejectWithdrawRequest = function(id) {
   w.status = "rejected";
   try { localStorage.setItem("winzo_withdraws", JSON.stringify(wds)); } catch(e) {}
   if (window.WINZO_SB) window.WINZO_SB.from("withdraws").update({ status: "rejected" }).eq("id", id).then(function(){});
-  showToast("Withdrawal rejected.", "error");
+  // Refund chips back to user
+  var users = getLiveUsers();
+  var u = users.find(function(x){ return x.uid === w.uid; });
+  if (u) {
+    u.chips = (Number(u.chips) || 0) + Number(w.amount);
+    u.wallet = u.chips;
+    saveLiveUsers(users);
+    if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", u.uid).then(function(){});
+  }
+  showToast("Withdrawal rejected. ₹" + Number(w.amount).toLocaleString("en-IN") + " refunded to " + (w.user||"user") + ".", "error");
   window.syncAndReload("recent-withdrawals", "Recent Withdrawal Requests");
 };
 
