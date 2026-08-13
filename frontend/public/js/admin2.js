@@ -720,8 +720,14 @@ window.showAddBlacklist = function () {
       badge.style.display = "none";
     }
 
-    // Green dot on Transaction Management
+    // Green dot on Transaction Management parent + count badges on children
+    var depCount = _notifs.filter(function(n){ return n.type === "deposit"; }).length;
+    var wdCount  = _notifs.filter(function(n){ return n.type === "withdraw"; }).length;
     dot.style.display = totalPending > 0 ? "inline-block" : "none";
+    var depBadge = document.getElementById("dep-req-badge");
+    var wdBadge  = document.getElementById("wd-req-badge");
+    if (depBadge) { depBadge.textContent = depCount; depBadge.style.display = depCount > 0 ? "inline-flex" : "none"; }
+    if (wdBadge)  { wdBadge.textContent  = wdCount;  wdBadge.style.display  = wdCount  > 0 ? "inline-flex" : "none"; }
 
     // Notification list
     var allNotifs = _notifs.concat(_errorNotifs).sort(function(a,b){ return new Date(b.time||0) - new Date(a.time||0); });

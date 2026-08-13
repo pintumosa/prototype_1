@@ -214,6 +214,36 @@ PANELS["deposit-detail"] = function() {
   </div>`;
 };
 
+PANELS["txn-history"] = function() {
+  var users = getLiveUsers();
+  var deps = getLiveDeposits().filter(function(d){ return d.status === "success" || d.status === "approved"; });
+  var wds  = getLiveWithdrawals().filter(function(w){ return w.status === "success" || w.status === "approved"; });
+  function getAadhaar(uid, phone, email) {
+    var u = users.find(function(x){ return (uid && x.uid===uid) || x.phone===phone || x.email===email; });
+    return u ? (u.aadhaarNumber||u.aadhaar_number||"—") : "—";
+  }
+  var all  = deps.map(function(d){ return { type:"deposit", user:d.user, userPhone:d.userPhone, userEmail:d.userEmail, uid:d.uid, amount:d.amount, method:d.method, ref:d.txnId||"—", time:d.time }; })
+    .concat(wds.map(function(w){ return { type:"withdraw", user:w.user, userPhone:w.userPhone, userEmail:w.userEmail, uid:w.uid, amount:w.amount, method:w.method, ref:w.upiId||"—", time:w.time }; }))
+    .sort(function(a,b){ return new Date(b.time||0) - new Date(a.time||0); });
+  return `<div class="a2-panel-head"><h2><i class="ph ph-receipt"></i> Transaction History</h2><span class="badge badge-green">${all.length} Approved</span></div>
+<div class="a2-search"><input type="text" placeholder="Search user..." oninput="filterTable(this,'txn-hist-tbody',1)" /></div>
+<div class="a2-table-wrap"><table class="a2-table"><thead><tr><th>#</th><th>User</th><th>Phone</th><th>Email</th><th>Aadhaar</th><th>Type</th><th>Amount</th><th>Method</th><th>Ref / UPI</th><th>Time</th></tr></thead>
+<tbody id="txn-hist-tbody">
+${all.length ? all.map(function(t,i){ return `<tr>
+  <td>${i+1}</td>
+  <td><strong>${t.user||"—"}</strong></td>
+  <td>${t.userPhone||"—"}</td>
+  <td style="font-size:12px;">${t.userEmail||"—"}</td>
+  <td style="font-family:monospace;font-size:12px;">${getAadhaar(t.uid,t.userPhone,t.userEmail)}</td>
+  <td>${t.type==="deposit" ? "<span style='color:#4ade80;font-weight:600;'>Deposit</span>" : "<span style='color:#fb923c;font-weight:600;'>Withdraw</span>"}</td>
+  <td style="font-weight:700;color:${t.type==="deposit"?"#4ade80":"#fb923c"};">${t.type==="deposit"?"+":"-"}${rupee(t.amount)}</td>
+  <td>${t.method||"—"}</td>
+  <td style="font-family:monospace;font-size:12px;">${t.ref}</td>
+  <td style="font-size:11px;color:var(--text-muted);">${fmtTime(t.time)}</td>
+</tr>`;}).join("") : emptyRow(10,"No approved transactions yet.")}
+</tbody></table></div>`;
+};
+
 PANELS["new-deposit-requests"] = function() {
   const reqs = getLiveDeposits().filter(function(d){ return d.type === "Deposit Request" && d.status === "pending"; }).sort(function(a,b){return new Date(b.time||0)-new Date(a.time||0);});
   return `<div class="a2-panel-head"><h2><i class="ph ph-bell-ringing"></i> New Deposit Requests</h2><span class="badge badge-yellow">${reqs.length} Pending</span></div>

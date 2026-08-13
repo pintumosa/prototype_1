@@ -185,6 +185,7 @@ window.syncAndReload = function(panelKey, panelLabel, targetId) {
     "challenges-setup":      getLiveSetsAsync,
     "game-monitor":          function() { return Promise.all([getLiveSetsAsync(), getLiveResultsAsync()]); },
     "new-deposit-requests":  getLiveDepositsAsync,
+    "txn-history":           function() { return Promise.all([getLiveDepositsAsync(), getLiveWithdrawalsAsync(), getLiveUsersAsync()]); },
     "deposits-2h":           getLiveDepositsAsync,
     "all-deposits":          getLiveDepositsAsync,
     "deposit-report":        getLiveDepositsAsync,
