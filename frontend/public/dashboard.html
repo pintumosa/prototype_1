@@ -406,6 +406,7 @@
       (res.data||[]).forEach(async r => {
         if (r.status === "accepted") {
           delete _myPendingReqs[r.challenge_id];
+          localStorage.setItem("wz_my_match_"+session.uid, r.challenge_id);
           window.WinzoAuth.toast("Matched! Game on.", "success");
           // Force fresh fetch from Supabase by clearing stale local cache entry
           const cached = window.WinzoSets.get();
@@ -633,12 +634,14 @@
     }
     function _renderMatchRoomWithArr(arr) {
       const results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
-      // Persist matched challenge ID for Player B so widget survives cache loss
       const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
-      let match = arr.find(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid))
-                 || arr.find(s => !s.acceptedBy && s.uid === session.uid);
-      // Fallback: if not found in arr but we have a stored match ID, find by ID
+      // Primary: find matched challenge for this user
+      let match = arr.find(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid));
+      // Fallback: use stored match ID (covers Player B cache loss)
       if (!match && storedMatchId) match = arr.find(s => s.id === storedMatchId);
+      // If no matched game, show pending challenge
+      if (!match) match = arr.find(s => !s.acceptedBy && s.uid === session.uid);
+      // Persist matched challenge ID
       if (match && match.acceptedBy) localStorage.setItem("wz_my_match_"+session.uid, match.id);
       const section = document.getElementById("match-room-section");
       const card = document.getElementById("match-room-card");
