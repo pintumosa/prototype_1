@@ -407,7 +407,6 @@ async function wzGetSetsAsync() {
   if (window.WINZO_SB) {
     try {
       const { data } = await window.WINZO_SB.from("challenges").select("*")
-        .neq("status","cancelled").neq("status","completed").neq("status","ended")
         .order("at", { ascending: false });
       if (data) {
         const remote = data.map(r => ({ id:r.id, gameId:r.game_id, uid:r.uid, byName:r.by_name, value:r.value, gameType:r.game_type, acceptedBy:r.accepted_by, acceptedByName:r.accepted_by_name, acceptedAt:r.accepted_at, roomCode:r.room_code, roomCodeSharedAt:r.room_code_shared_at||null, roomCodeCopiedAt:r.room_code_copied_at||null, startedAt:r.started_at||null, startedBy:r.started_by||null, setterStartedAt:r.setter_started_at||null, acceptorStartedAt:r.acceptor_started_at||null, status:r.status||null, refunded:r.refunded||false, cancelledBy:r.cancelled_by||null, cancelledAt:r.cancelled_at||null, at:r.at }));
@@ -428,9 +427,9 @@ async function wzGetSetsAsync() {
         });
         // Only add local-only entries that are not cancelled/completed
         const remoteIds = new Set(remote.map(s => s.id));
-        local.filter(s => !remoteIds.has(s.id) && s.status !== "cancelled" && s.status !== "completed" && s.status !== "ended").forEach(s => merged.push(s));
+        local.filter(s => !remoteIds.has(s.id) && s.status !== "cancelled" && s.status !== "completed").forEach(s => merged.push(s));
         // Strip cancelled/completed before caching so stale local data never resurfaces
-        const clean = merged.filter(s => s.status !== "cancelled" && s.status !== "completed" && s.status !== "ended");
+        const clean = merged.filter(s => s.status !== "cancelled" && s.status !== "completed");
         localStorage.setItem(WZ_SETS_KEY, JSON.stringify(clean));
         return clean;
       }
