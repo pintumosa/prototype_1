@@ -594,6 +594,15 @@
     // Subscribe to join_requests for my open challenges
     function _subscribeMyRequests() {} // replaced by polling
 
+    // Realtime subscription on challenges table for instant updates
+    if (window.WINZO_SB) {
+      window.WINZO_SB.channel("challenges-live")
+        .on("postgres_changes", { event: "*", schema: "public", table: "challenges" }, function() {
+          window.WinzoSets.getAsync().then(function(arr) { _paintSets(arr); _paintMatchRoom(arr); });
+        })
+        .subscribe();
+    }
+
     window.cancelSet = async function(id) {
       const arr = await window.WinzoSets.getAsync();
       const s = arr.find(x => x.id === id);
