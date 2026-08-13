@@ -612,7 +612,7 @@
       fresh.chips = chips - val; fresh.wallet = fresh.chips;
       window.WinzoAuth.saveUsers(users);
       if (window.WINZO_SB) try { await window.WINZO_SB.from("users").update({ chips: fresh.chips }).eq("uid", session.uid); } catch(e) {}
-      const newSet = { id:"s_"+Date.now(), gameId:"WZ-"+Math.random().toString(36).substr(2,7).toUpperCase(), uid:session.uid, byName:session.fullName.split(" ")[0], value:val, gameType:gt, at:Date.now() };
+      const newSet = { id:"s_"+Date.now(), gameId:"WZ-"+Date.now().toString(36).toUpperCase()+Math.random().toString(36).substr(2,4).toUpperCase(), uid:session.uid, byName:session.fullName.split(" ")[0], value:val, gameType:gt, at:Date.now() };
       // Optimistically add to local storage first so renderSets shows it immediately
       const arr = window.WinzoSets.get();
       arr.push(newSet);
@@ -913,6 +913,14 @@
       const chips = Number(fresh && (fresh.chips ?? fresh.wallet) || 0);
       if (amount > chips) return window.WinzoAuth.toast(`Insufficient chips. Balance: ₹${chips.toLocaleString("en-IN")}`, "error", 4000);
       const w = { id:"wd_"+Date.now(), uid:session.uid, user:session.fullName, userPhone:session.phone||"—", userEmail:session.email||"—", amount, method, upiId, status:"pending", time:new Date().toLocaleString("en-IN") };
+      // Deduct chips immediately
+      const idx = users.findIndex(u => u.uid === session.uid);
+      if (idx >= 0) {
+        users[idx].chips = chips - amount;
+        users[idx].wallet = users[idx].chips;
+        window.WinzoAuth.saveUsers(users);
+        if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: users[idx].chips }).eq("uid", session.uid).then(function(){});
+      }
       const wds = window.WinzoWithdraws.get();
       wds.unshift(w);
       window.WinzoWithdraws.save(wds);
