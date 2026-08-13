@@ -121,14 +121,19 @@ ${sets.length ? sets.slice().reverse().map(function(s,i){return `<tr><td>${i+1}<
 PANELS["search-screenshots"] = function() {
   var results = getLiveResults();
   var reports = getLiveReports();
+  var sets = getLiveSets();
   var all = results.concat(reports.map(function(r){ return { _type:"report", submitterName:r.reporterName, submitterPhone:"—", opponentName:r.opponent, opponentPhone:"—", gameType:"—", amount:"—", result:"report", proofUrl:r.proofUrl, screenshotAt:r.screenshotAt||null, status:r.status, at:r.at||"—" }; }));
   all.sort(function(a,b){ return (a.gameId||"").localeCompare(b.gameId||""); });
+  function getMatchedAt(r) {
+    var s = sets.find(function(x){ return x.id === r.challengeId || x.gameId === r.gameId; });
+    return s ? (s.acceptedAt||null) : null;
+  }
   var rows = ""; var lastGameId = null; var groupSerial = 0; var isFirstInGroup = false;
   all.forEach(function(r){
     var gid = r.gameId||"—";
     if (gid !== lastGameId) {
       if (lastGameId !== null)
-        rows += "<tr><td colspan='13' style='padding:0;height:3px;background:rgba(255,0,0,0.5);border:none;'></td></tr><tr><td colspan='13' style='padding:0;height:2px;background:transparent;border:none;'></td></tr>";
+        rows += "<tr><td colspan='15' style='padding:0;height:3px;background:rgba(255,0,0,0.5);border:none;'></td></tr><tr><td colspan='15' style='padding:0;height:2px;background:transparent;border:none;'></td></tr>";
       lastGameId = gid; groupSerial++; isFirstInGroup = true;
     } else { isFirstInGroup = false; }
     var imgUrl = r.proofKey || r.proofUrl;
@@ -153,6 +158,8 @@ PANELS["search-screenshots"] = function() {
       + "<td>"+(r.opponentName||"—")+"</td>"
       + "<td>"+(r.opponentPhone||"—")+"</td>"
       + "<td>"+(r.gameType||"—")+"</td>"
+      + "<td style=\"font-family:monospace;font-size:12px;color:#facc15;font-weight:600;\">"+(r.roomCode||"—")+"</td>"
+      + "<td style=\"font-size:12px;color:var(--text-muted);white-space:nowrap;\">"+(getMatchedAt(r) ? fmtTime(getMatchedAt(r)) : "—")+"</td>"
       + "<td>"+(r.amount && r.amount!=="—" ? rupee(r.amount) : "—")+"</td>"
       + "<td>"+statusBadge(r.result||"pending")+"</td>"
       + "<td>"+thumb+"</td>"
@@ -163,8 +170,8 @@ PANELS["search-screenshots"] = function() {
   });
   return "<div class=\"a2-panel-head\"><h2><i class=\"ph ph-image-square\"></i> Search Screenshots</h2></div>"
     + "<div class=\"a2-search\"><input type=\"text\" placeholder=\"Search by player or opponent...\" oninput=\"filterTable(this,'ss-tbody',2,4)\" /></div>"
-    + "<div class=\"a2-table-wrap\"><table class=\"a2-table\"><thead><tr><th>#</th><th>Game ID</th><th>Player</th><th>Phone</th><th>Opponent</th><th>Opp. Phone</th><th>Game</th><th>Amount</th><th>Result</th><th>Screenshot</th><th>Screenshot Time</th><th>Status</th><th>Action</th></tr></thead>"
-    + "<tbody id=\"ss-tbody\">"+(all.length ? rows : emptyRow(13,"No screenshots submitted yet."))+"</tbody></table></div>";
+    + "<div class=\"a2-table-wrap\"><table class=\"a2-table\"><thead><tr><th>#</th><th>Game ID</th><th>Player</th><th>Phone</th><th>Opponent</th><th>Opp. Phone</th><th>Game</th><th>Room Code</th><th>Matched At</th><th>Amount</th><th>Result</th><th>Screenshot</th><th>Screenshot Time</th><th>Status</th><th>Action</th></tr></thead>"
+    + "<tbody id=\"ss-tbody\">"+(all.length ? rows : emptyRow(15,"No screenshots submitted yet."))+"</tbody></table></div>";
 };
 
 PANELS["all-challenges"] = function() {

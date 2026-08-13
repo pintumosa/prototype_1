@@ -191,7 +191,7 @@ window.syncAndReload = function(panelKey, panelLabel, targetId) {
     "deposit-report":        getLiveDepositsAsync,
     "recent-withdrawals":    getLiveWithdrawalsAsync,
     "all-withdrawals":       getLiveWithdrawalsAsync,
-    "search-screenshots":    function() { return Promise.all([getLiveResultsAsync(), getLiveReportsAsync()]); },
+    "search-screenshots":    function() { return Promise.all([getLiveResultsAsync(), getLiveReportsAsync(), getLiveSetsAsync()]); },
     "blacklisted":           getLiveBlacklistAsync,
     "view-all-games":        getLiveGamesAsync,
     "all-tournaments":       getLiveTournamentsAsync,

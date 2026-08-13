@@ -173,6 +173,21 @@ body { padding-bottom: 0 !important; }
   color: var(--text-primary);
 }
 .a2-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.a2-refresh-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.2s, color 0.2s;
+}
+.a2-refresh-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
 
 /* Notification bell */
 .a2-notif-wrap { position: relative; }
@@ -211,6 +226,7 @@ body { padding-bottom: 0 !important; }
   animation: notif-pop 0.3s ease;
 }
 @keyframes notif-pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .a2-notif-dropdown {
   position: absolute;

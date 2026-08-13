@@ -688,6 +688,7 @@ window.showAddBlacklist = function () {
   }
 
   async function pollNotifications() {
+    window.pollNotifications = pollNotifications;
     var deps = [], wds = [];
     try { deps = await getLiveDepositsAsync(); } catch(e) {}
     try { wds = await getLiveWithdrawalsAsync(); } catch(e) {}
