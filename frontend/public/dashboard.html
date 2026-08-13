@@ -430,7 +430,7 @@
       if (hash === _lastSetsHash) return;
       _lastSetsHash = hash;
       if (!arr.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
-      const visible = arr.filter(s => !s.acceptedBy || s.uid === session.uid || s.acceptedBy === session.uid);
+      const visible = arr.filter(s => !s.acceptedBy);
       if (!visible.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
       listEl.innerHTML = visible.slice().reverse().map((s,i) => {
         const mine = s.uid === session.uid || (!s.uid && s.byName === session.fullName.split(" ")[0]);
@@ -750,13 +750,14 @@
       }
     }
 
-    window.markGameEnded = function(matchId) {
+    window.markGameEnded = async function(matchId) {
       localStorage.removeItem("wz_my_match_"+session.uid);
       const arr = window.WinzoSets.get().filter(s => s.id !== matchId);
       localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
+      if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"ended" }).eq("id", matchId); } catch(e) {}
       _lastMatchHash = ""; _lastSetsHash = "";
       document.getElementById("match-room-section").hidden = true;
-      window.WinzoSets.getAsync().then(a => _paintSets(a));
+      _paintSets(arr);
     };
 
     window.cancelPendingSet = async function(id) {
