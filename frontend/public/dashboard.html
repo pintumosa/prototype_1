@@ -430,7 +430,7 @@
       if (hash === _lastSetsHash) return;
       _lastSetsHash = hash;
       if (!arr.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
-      const visible = arr.filter(s => !s.acceptedBy || s.uid === session.uid || s.acceptedBy === session.uid);
+      const visible = arr.filter(s => !s.acceptedBy);
       if (!visible.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
       listEl.innerHTML = visible.slice().reverse().map((s,i) => {
         const mine = s.uid === session.uid || (!s.uid && s.byName === session.fullName.split(" ")[0]);
@@ -585,11 +585,9 @@
       if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
       try {
         if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id); } catch(e) {}
-        const cur = await getChips(s.uid);
-        await setChips(s.uid, cur + s.value);
         await window.WinzoSets.delete(id);
         renderSets();
-        window.WinzoAuth.toast("Challenge cancelled. Chips refunded.", "success");
+        window.WinzoAuth.toast("Challenge cancelled.", "success");
       } catch(e) { window.WinzoAuth.toast("Cancel failed: " + e.message, "error", 5000); }
     };
 
@@ -751,10 +749,11 @@
       }
     }
 
-    window.markGameEnded = function(matchId) {
+    window.markGameEnded = async function(matchId) {
       localStorage.removeItem("wz_my_match_"+session.uid);
       const arr = window.WinzoSets.get().filter(s => s.id !== matchId);
       localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
+      if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"completed" }).eq("id", matchId); } catch(e) {}
       _lastMatchHash = ""; _lastSetsHash = "";
       document.getElementById("match-room-section").hidden = true;
       window.WinzoSets.getAsync().then(a => _paintSets(a));
@@ -767,10 +766,8 @@
       if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
       if (s.uid !== session.uid) return;
       if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id); } catch(e) {}
-      const cur = await getChips(s.uid);
-      await setChips(s.uid, cur + s.value);
       await window.WinzoSets.delete(id);
-      window.WinzoAuth.toast("Challenge cancelled. Chips refunded.", "success");
+      window.WinzoAuth.toast("Challenge cancelled.", "success");
       renderSets(); renderMatchRoom();
     };
 
@@ -852,19 +849,6 @@
       const match = arr.find(x => x.id === id);
       if (!match) return;
 
-      if (resultVal === "cancel") {
-        // Refund both players
-        const users = window.WinzoAuth.getUsers();
-        [match.uid, match.acceptedBy].forEach(uid => {
-          const u = users.find(x => x.uid === uid);
-          if (u) { u.chips = Number(u.chips ?? u.wallet ?? 0) + match.value; u.wallet = u.chips; }
-        });
-        window.WinzoAuth.saveUsers(users);
-        await window.WinzoSets.delete(id);
-        window.WinzoAuth.toast("Game cancelled. Chips refunded.", "success");
-        renderMatchRoom(); renderSets(); return;
-      }
-
       const f = document.getElementById("result-proof").files[0];
       if (!f) return window.WinzoAuth.toast("Screenshot required.", "error");
       if (f.size > 5*1024*1024) return window.WinzoAuth.toast("File must be under 5 MB.", "error");
@@ -909,7 +893,7 @@
       localStorage.setItem("winzo_results", JSON.stringify(results));
       if (window.WinzoResults) window.WinzoResults.saveOne(results[0]);
       window.WinzoAuth.toast("Result submitted! Admin will review.", "success", 4000);
-      renderMatchRoom();
+      renderMatchRoom(); renderSets();
     };
     document.getElementById("open-report").addEventListener("click", () => document.getElementById("report-modal").hidden = false);
     document.getElementById("close-report").addEventListener("click", () => document.getElementById("report-modal").hidden = true);

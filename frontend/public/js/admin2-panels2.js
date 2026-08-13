@@ -334,7 +334,7 @@ PANELS["game-monitor"] = function() {
   // Derive status for each game
   function gameStatus(s) {
     if (s.status === "cancelled" || s.cancelledBy) return "cancelled";
-    if (s.status === "completed") return "completed";
+    if (s.status === "completed" || s.status === "ended") return "completed";
     if (resultMap[s.id] && resultMap[s.id].length) return "result_pending";
     if (s.startedAt) return "live";
     if (s.acceptedBy) return "matched";
