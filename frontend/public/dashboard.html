@@ -378,7 +378,7 @@
       _pollCount++;
       window.WinzoSets.getAsync().then(function(merged) { _paintSets(merged); _paintMatchRoom(merged); });
       if (_pollCount % 3 === 0) refreshView();
-    }, 10000);
+    }, 2000);
 
     // Fast 2s poll for match room updates (room code, startedAt) when matched
     setInterval(function() {
