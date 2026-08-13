@@ -458,7 +458,17 @@
     }
     function renderMatchRoom() {
       _lastMatchHash = "";
-      window.WinzoSets.getAsync().then(arr => _paintMatchRoom(arr));
+      const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
+      window.WinzoSets.getAsync().then(async arr => {
+        // If storedMatchId not in arr (filtered out), fetch it directly
+        if (storedMatchId && !arr.find(s => s.id === storedMatchId) && window.WINZO_SB) {
+          try {
+            const { data } = await window.WINZO_SB.from("challenges").select("*").eq("id", storedMatchId).maybeSingle();
+            if (data) arr.push({ id:data.id, gameId:data.game_id, uid:data.uid, byName:data.by_name, value:data.value, gameType:data.game_type, acceptedBy:data.accepted_by, acceptedByName:data.accepted_by_name, acceptedAt:data.accepted_at, roomCode:data.room_code, startedAt:data.started_at, status:data.status, at:data.at });
+          } catch(e) {}
+        }
+        _paintMatchRoom(arr);
+      });
     }
 
     window.acceptSet = async function(id) {
@@ -637,11 +647,11 @@
       const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
       // Primary: find matched challenge for this user
       let match = arr.find(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid));
-      // Fallback: use stored match ID (covers Player B cache loss)
+      // Fallback: use stored match ID (covers Player B cache loss + filtered-out completed challenges)
       if (!match && storedMatchId) match = arr.find(s => s.id === storedMatchId);
       // If no matched game, show pending challenge
       if (!match) match = arr.find(s => !s.acceptedBy && s.uid === session.uid);
-      // Persist matched challenge ID
+      // Persist matched challenge ID — only clear when user explicitly ends game
       if (match && match.acceptedBy) localStorage.setItem("wz_my_match_"+session.uid, match.id);
       const section = document.getElementById("match-room-section");
       const card = document.getElementById("match-room-card");
@@ -759,6 +769,7 @@
 
     window.markGameEnded = function(matchId) {
       localStorage.setItem("wz_game_ended_"+matchId+"_"+session.uid, "1");
+      localStorage.removeItem("wz_my_match_"+session.uid);
       _lastMatchHash = "";
       window.WinzoSets.getAsync().then(arr => _paintMatchRoom(arr));
     };
@@ -909,7 +920,6 @@
         at: new Date().toLocaleString("en-IN")
       });
       localStorage.setItem("winzo_results", JSON.stringify(results));
-      localStorage.removeItem("wz_my_match_"+session.uid);
       localStorage.removeItem("wz_game_ended_"+id+"_"+session.uid);
       if (window.WinzoResults) window.WinzoResults.saveOne(results[0]);
       window.WinzoAuth.toast("Result submitted! Admin will review.", "success", 4000);
