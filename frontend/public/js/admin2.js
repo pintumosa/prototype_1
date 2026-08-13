@@ -724,7 +724,7 @@ window.showAddBlacklist = function () {
     dot.style.display = totalPending > 0 ? "inline-block" : "none";
 
     // Notification list
-    var allNotifs = _notifs.concat(_errorNotifs);
+    var allNotifs = _notifs.concat(_errorNotifs).sort(function(a,b){ return new Date(b.time||0) - new Date(a.time||0); });
     if (allNotifs.length === 0) {
       list.innerHTML = '<div class="a2-notif-empty">No pending requests</div>';
     } else {
