@@ -505,18 +505,24 @@ body { padding-bottom: 0 !important; }
 
 @media (max-width: 480px) {
   .a2-topbar { padding: 0 12px; gap: 8px; }
-  .a2-topbar-title { font-size: 11px; letter-spacing: 0.5px; }
+  .a2-topbar-title { font-size: 11px; letter-spacing: 0.5px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .a2-badge-admin { display: none; }
+  .a2-refresh-btn { width: 30px; height: 30px; font-size: 15px; }
+  .a2-notif-btn { width: 30px; height: 30px; font-size: 17px; }
   .a2-content { padding: 12px 10px; }
   .a2-stat-card { padding: 12px 10px; gap: 8px; }
   .a2-stat-val { font-size: 1.2rem; }
   .a2-stat-icon { width: 32px; height: 32px; font-size: 14px; }
-  .a2-table th, .a2-table td { padding: 10px; font-size: 12px; }
+  .a2-table th, .a2-table td { padding: 8px 6px; font-size: 11px; }
   .a2-panel-head h2 { font-size: 0.95rem; }
+  .a2-panel-head { flex-wrap: wrap; gap: 6px; }
   .a2-form-card, .a2-tx-card { padding: 16px 12px; max-width: 100%; }
   .a2-gate-card { padding: 28px 18px; }
   .a2-notif-dropdown { width: calc(100vw - 16px); right: -48px; }
   .a2-overview-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn { font-size: 12px; padding: 8px 10px; }
+  .a2-search input { font-size: 13px; padding: 8px 10px; }
+  .a2-table-wrap { border-radius: 8px; }
 }
 
 #dash-wrap { overflow-x: hidden; }
