@@ -16,9 +16,9 @@ ${sets.length ? sets.slice().reverse().map(function(s,i){return `<tr><td>${i+1}<
 PANELS["running-challenges"] = function() {
   var sets = getLiveSets();
   var users = getLiveUsers();
-  var matched = sets.filter(function(s){ return s.acceptedBy && !s.startedAt; });
-  var started = sets.filter(function(s){ return s.acceptedBy && s.startedAt; });
-  var open    = sets.filter(function(s){ return !s.acceptedBy; });
+  var matched = sets.filter(function(s){ return s.acceptedBy && !s.startedAt && s.status !== "completed" && s.status !== "ended" && s.status !== "cancelled"; });
+  var started = sets.filter(function(s){ return s.acceptedBy && s.startedAt && s.status !== "completed" && s.status !== "ended" && s.status !== "cancelled"; });
+  var open    = sets.filter(function(s){ return !s.acceptedBy && s.status !== "completed" && s.status !== "ended" && s.status !== "cancelled"; });
   function phoneOf(uid) {
     var u = users.find(function(x){ return x.uid === uid; });
     return u ? (u.phone||"—") : "—";
@@ -364,14 +364,23 @@ PANELS["game-monitor"] = function() {
       resultCells = res.map(function(r) {
         var color = r.result === "won" ? "#4ade80" : r.result === "lost" ? "#f87171" : "#fbbf24";
         var thumb = r.proofUrl
-          ? "<button class='btn btn-secondary' style='padding:2px 7px;font-size:11px;' onclick=\"adminShowDocModal('"+r.proofUrl+"')\">📷</button>"
-          : "";
-        return "<div style='font-size:12px;color:"+color+";font-weight:600;'>"+
-          (r.submitterName||"?")+" says <strong>"+r.result.toUpperCase()+"</strong> "+thumb+"</div>";
+          ? "<button class='btn btn-secondary gm-proof-btn' style='padding:2px 7px;font-size:11px;' data-proof-url='"+encodeURIComponent(r.proofUrl)+"'>📷 View</button>"
+          : "<span style='font-size:11px;color:var(--text-muted);'>No screenshot</span>";
+        return "<div style='border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:6px 8px;margin-bottom:4px;'>"
+          + "<div style='font-size:12px;color:"+color+";font-weight:700;'>"+(r.submitterName||"?")+" — "+r.result.toUpperCase()+"</div>"
+          + "<div style='font-size:11px;color:var(--text-muted);'>📞 "+(r.submitterPhone||"—")+"</div>"
+          + "<div style='font-size:11px;color:var(--text-muted);'>🕐 Uploaded: "+(r.screenshotAt||r.at||"—")+"</div>"
+          + "<div style='margin-top:4px;'>"+thumb+"</div>"
+          + "</div>";
       }).join("");
     }
-    var cancelInfo = s.cancelledBy ? "<div style='font-size:11px;color:#f87171;'>Cancelled by: "+s.cancelledBy+(s.cancelledAt?" at "+new Date(s.cancelledAt).toLocaleString("en-IN"):"")+"</div>" : "";
-    var startInfo = s.startedAt ? "<div style='font-size:11px;color:#4ade80;'>Started: "+new Date(s.startedAt).toLocaleString("en-IN")+(s.startedBy?" by "+s.startedBy:"")+"</div>" : "";
+    var cancelInfo = s.cancelledBy ? "<div style='font-size:11px;color:#f87171;'>Cancelled by: "+s.cancelledBy+(s.cancelledAt?" at "+new Date(s.cancelledAt).toLocaleString("en-IN"):"")+"></div>" : "";
+    var startInfo = "";
+    if (s.setterStartedAt) startInfo += "<div style='font-size:11px;color:#4ade80;'>▶ <b>"+(s.byName||"Setter")+"</b>: "+new Date(s.setterStartedAt).toLocaleString("en-IN")+"</div>";
+    if (s.acceptorStartedAt) startInfo += "<div style='font-size:11px;color:#4ade80;'>▶ <b>"+(s.acceptedByName||"Opponent")+"</b>: "+new Date(s.acceptorStartedAt).toLocaleString("en-IN")+"</div>";
+    if (!startInfo && s.startedAt) startInfo = "<div style='font-size:11px;color:#4ade80;'>🟢 "+new Date(s.startedAt).toLocaleString("en-IN")+(s.startedBy?" by "+s.startedBy:"")+"</div>";
+    if (!startInfo) startInfo = "—";
+
 
     return "<tr>"
       + "<td style='font-size:11px;font-family:monospace;color:var(--accent);'>"+(s.gameId||s.id).slice(-8)+"</td>"
@@ -379,7 +388,7 @@ PANELS["game-monitor"] = function() {
       + "<td><strong>"+(s.byName||"—")+"</strong><div style='font-size:11px;color:var(--text-muted);'>₹"+(s.value||0)+" · "+(s.gameType||"—")+"</div></td>"
       + "<td>"+(s.acceptedByName||"<span style='color:var(--text-muted);font-size:12px;'>Waiting...</span>")+"</td>"
       + "<td style='font-family:monospace;font-size:12px;'>"+(s.roomCode||"—")+"</td>"
-      + "<td>"+startInfo+(s.startedAt?"":"—")+"</td>"
+      + "<td>"+startInfo+"</td>"
       + "<td>"+resultCells+"</td>"
       + "<td>"+cancelInfo+(s.cancelledBy?"":"—")+"</td>"
       + "<td style='font-size:11px;color:var(--text-muted);'>"+new Date(s.at).toLocaleString("en-IN")+"</td>"

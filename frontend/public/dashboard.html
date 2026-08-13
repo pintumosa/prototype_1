@@ -791,13 +791,16 @@
       const arr = window.WinzoSets.get();
       const s = arr.find(x => x.id === id);
       if (!s) return;
-      if (s.startedAt) return window.WinzoAuth.toast("Game already started.", "info");
-      s.startedAt = Date.now();
-      s.startedByName = session.fullName.split(" ")[0];
+      const isSetter = s.uid === session.uid;
+      if (!s.startedAt) { s.startedAt = Date.now(); s.startedByName = session.fullName.split(" ")[0]; }
+      if (isSetter) { s.setterStartedAt = Date.now(); } else { s.acceptorStartedAt = Date.now(); }
       localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
       localStorage.setItem("wz_started_"+id, String(s.startedAt));
       if (window.WINZO_SB) {
-        try { await window.WINZO_SB.from("challenges").update({ started_at: new Date(s.startedAt).toISOString(), started_by: session.fullName }).eq("id", id); } catch(e) {}
+        const upd = { started_at: new Date(s.startedAt).toISOString(), started_by: session.fullName };
+        if (isSetter) upd.setter_started_at = new Date(s.setterStartedAt).toISOString();
+        else upd.acceptor_started_at = new Date(s.acceptorStartedAt).toISOString();
+        try { await window.WINZO_SB.from("challenges").update(upd).eq("id", id); } catch(e) {}
       }
       const users = window.WinzoAuth.getUsers();
       const setter = users.find(u => u.uid === s.uid);
@@ -856,7 +859,7 @@
       let proofUrl, proofKey = null;
       try {
         const sbSession = JSON.parse(localStorage.getItem("winzo_sb_session") || "null");
-        const token = sbSession?.access_token;
+        const token = sbSession?.access_token || (window.WINZO_ENV && window.WINZO_ENV.SUPABASE_ANON);
         const { url, key } = await window.wzUploadToStorj(cf, "screenshots/" + session.uid, token);
         proofUrl = url; proofKey = key;
       } catch(e) {
@@ -933,7 +936,7 @@
       let proofUrl, proofKey = null;
       try {
         const sbSession = JSON.parse(localStorage.getItem("winzo_sb_session") || "null");
-        const token = sbSession?.access_token;
+        const token = sbSession?.access_token || (window.WINZO_ENV && window.WINZO_ENV.SUPABASE_ANON);
         const { url, key } = await window.wzUploadToStorj(cf, "reports/" + session.uid, token);
         proofUrl = url; proofKey = key;
       } catch(e) {

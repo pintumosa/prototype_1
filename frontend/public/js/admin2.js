@@ -768,6 +768,11 @@ window.showAddBlacklist = function () {
       var dd = document.getElementById("notif-dropdown");
       if (dd) dd.style.display = "none";
     }
+    // Game monitor screenshot viewer
+    if (e.target.classList.contains("gm-proof-btn")) {
+      var url = decodeURIComponent(e.target.dataset.proofUrl || "");
+      if (url) window.adminShowDocModal(url);
+    }
   });
 
   // Poll every 120 seconds — reduces egress vs 30s
