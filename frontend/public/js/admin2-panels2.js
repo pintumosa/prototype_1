@@ -122,7 +122,15 @@ PANELS["search-screenshots"] = function() {
   var results = getLiveResults();
   var reports = getLiveReports();
   var all = results.concat(reports.map(function(r){ return { _type:"report", submitterName:r.reporterName, submitterPhone:"—", opponentName:r.opponent, opponentPhone:"—", gameType:"—", amount:"—", result:"report", proofUrl:r.proofUrl, screenshotAt:r.screenshotAt||null, status:r.status, at:r.at||"—" }; }));
-  var rows = all.map(function(r,i){
+  all.sort(function(a,b){ return (a.gameId||"").localeCompare(b.gameId||""); });
+  var rows = ""; var lastGameId = null; var groupSerial = 0; var isFirstInGroup = false;
+  all.forEach(function(r){
+    var gid = r.gameId||"—";
+    if (gid !== lastGameId) {
+      if (lastGameId !== null)
+        rows += "<tr><td colspan='13' style='padding:0;height:3px;background:rgba(255,0,0,0.5);border:none;'></td></tr><tr><td colspan='13' style='padding:0;height:2px;background:transparent;border:none;'></td></tr>";
+      lastGameId = gid; groupSerial++; isFirstInGroup = true;
+    } else { isFirstInGroup = false; }
     var imgUrl = r.proofKey || r.proofUrl;
     var storjKey = imgUrl ? (imgUrl.match(/\/storj\/(.+?)(?:\?|$)/)?.[1] || null) : null;
     var thumb = imgUrl
@@ -137,9 +145,9 @@ PANELS["search-screenshots"] = function() {
         + "<button class='btn btn-secondary' style='padding:4px 10px;font-size:11px;color:var(--danger);border-color:var(--danger);' onclick=\"adminCancelResult('"+r.id+"','"+r.submitterUid+"','"+r.opponentUid+"',"+Number(r.amount||0)+")\"><i class='ph ph-x-circle'></i> Cancel</button>"
         + "</div>";
     }
-    return "<tr>"
-      + "<td>"+(i+1)+"</td>"
-      + "<td style=\"font-family:monospace;font-size:12px;color:var(--accent);\">"+(r.gameId||"—")+"</td>"
+    rows += "<tr>"
+      + "<td>"+(isFirstInGroup ? groupSerial : "")+"</td>"
+      + "<td style=\"font-family:monospace;font-size:12px;color:var(--accent);\">"+gid+"</td>"
       + "<td><strong>"+(r.submitterName||"—")+"</strong></td>"
       + "<td>"+(r.submitterPhone||"—")+"</td>"
       + "<td>"+(r.opponentName||"—")+"</td>"
@@ -152,7 +160,7 @@ PANELS["search-screenshots"] = function() {
       + "<td>"+statusBadge(r.status||"pending")+"</td>"
       + "<td>"+actions+"</td>"
       + "</tr>";
-  }).join("");
+  });
   return "<div class=\"a2-panel-head\"><h2><i class=\"ph ph-image-square\"></i> Search Screenshots</h2></div>"
     + "<div class=\"a2-search\"><input type=\"text\" placeholder=\"Search by player or opponent...\" oninput=\"filterTable(this,'ss-tbody',2,4)\" /></div>"
     + "<div class=\"a2-table-wrap\"><table class=\"a2-table\"><thead><tr><th>#</th><th>Game ID</th><th>Player</th><th>Phone</th><th>Opponent</th><th>Opp. Phone</th><th>Game</th><th>Amount</th><th>Result</th><th>Screenshot</th><th>Screenshot Time</th><th>Status</th><th>Action</th></tr></thead>"
