@@ -682,7 +682,7 @@ window.showAddBlacklist = function () {
 
     var newNotifs = [];
     deps.filter(function(d){ return d.status === "pending"; }).forEach(function(d) {
-      newNotifs.push({ id: "dep_" + d.id, type: "deposit", msg: "New deposit request: ₹" + Number(d.amount).toLocaleString("en-IN") + " from " + (d.user || "User"), panel: "new-deposit-requests", label: "New Deposit Requests", time: d.time });
+      newNotifs.push({ id: "dep_" + d.id, type: "deposit", msg: "New deposit request: ₹" + Number(d.amount).toLocaleString("en-IN") + " from " + (d.user || "User"), panel: "new-deposit-requests", label: "New Deposit Requests", time: d.time, targetId: d.id });
     });
     wds.filter(function(w){ return w.status === "pending"; }).forEach(function(w) {
       newNotifs.push({ id: "wd_" + w.id, type: "withdraw", msg: "New withdrawal request: ₹" + Number(w.amount).toLocaleString("en-IN") + " from " + (w.user || "User"), panel: "recent-withdrawals", label: "Recent Withdrawal Requests", time: w.time });
@@ -724,8 +724,8 @@ window.showAddBlacklist = function () {
                  : n.type === "result"  ? '<i class="ph ph-image-square"></i>'
                  :                        '<i class="ph ph-arrow-up-right"></i>';
         var clickAttr = n.type === "error"
-          ? 'onclick="handleNotifClick(\'' + n.id + '\',\'\',\'\')"'
-          : 'onclick="handleNotifClick(\'' + n.id + '\',\'' + n.panel + '\',\'' + n.label + '\')"';
+          ? 'onclick="handleNotifClick(\'' + n.id + '\',\'\',\'\',\'\')"'
+          : 'onclick="handleNotifClick(\'' + n.id + '\',\'' + n.panel + '\',\'' + n.label + '\',\'' + (n.targetId||"") + '\')"';
         return '<div class="a2-notif-item' + (isSeen ? " seen" : "") + '" ' + clickAttr + '>'
           + '<span class="a2-notif-icon ' + iconClass + '">' + icon + '</span>'
           + '<div class="a2-notif-text"><div class="a2-notif-msg">' + n.msg + '</div>'
@@ -735,7 +735,7 @@ window.showAddBlacklist = function () {
     }
   }
 
-  window.handleNotifClick = function(id, panel, label) {
+  window.handleNotifClick = function(id, panel, label, targetId) {
     markSeen(id);
     document.getElementById("notif-dropdown").style.display = "none";
     var allNotifs = _notifs.concat(_errorNotifs);
@@ -744,7 +744,7 @@ window.showAddBlacklist = function () {
     if (badge) { badge.textContent = unseen.length; badge.style.display = unseen.length > 0 ? "flex" : "none"; }
     var items = document.querySelectorAll(".a2-notif-item");
     items.forEach(function(el) { el.classList.add("seen"); });
-    if (panel) window.syncAndReload(panel, label);
+    if (panel) window.syncAndReload(panel, label, targetId);
   };
 
   window.toggleNotifDropdown = function() {

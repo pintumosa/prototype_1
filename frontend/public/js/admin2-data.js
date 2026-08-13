@@ -157,9 +157,20 @@ function saveLiveUsers(arr) {
 }
 
 // ── Auto-sync on panel load ───────────────────────────────────
-window.syncAndReload = function(panelKey, panelLabel) {
-  // Render immediately from localStorage — no wait
+window.syncAndReload = function(panelKey, panelLabel, targetId) {
   window.loadPanel(panelKey, panelLabel);
+  if (targetId) window._highlightTarget = targetId;
+  function highlightRow() {
+    if (!window._highlightTarget) return;
+    var row = document.querySelector("[data-dep-id='" + window._highlightTarget + "']");
+    if (row) {
+      row.style.transition = "background 0.3s";
+      row.style.background = "rgba(250,204,21,0.25)";
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      window._highlightTarget = null;
+    }
+  }
+  highlightRow();
   // Then fetch fresh data from Supabase in background and re-render
   const loaders = {
     "view-all-users":        getLiveUsersAsync,
@@ -188,10 +199,10 @@ window.syncAndReload = function(panelKey, panelLabel) {
   };
   if (loaders[panelKey]) {
     loaders[panelKey]().then(function() {
-      // Re-render only if user is still on the same panel (compare by key stored on element)
       var titleEl = document.getElementById("topbar-title");
       if (titleEl && titleEl.dataset.panelKey === panelKey) {
         window.loadPanel(panelKey, panelLabel);
+        highlightRow();
       }
     }).catch(function(){});
   }
