@@ -912,7 +912,7 @@
       const fresh = users.find(u => u.uid === session.uid);
       const chips = Number(fresh && (fresh.chips ?? fresh.wallet) || 0);
       if (amount > chips) return window.WinzoAuth.toast(`Insufficient chips. Balance: ₹${chips.toLocaleString("en-IN")}`, "error", 4000);
-      const w = { id:"wd_"+Date.now(), uid:session.uid, user:session.fullName, userPhone:session.phone||"—", userEmail:session.email||"—", amount, method, upiId, status:"pending", time:new Date().toLocaleString("en-IN") };
+      const w = { id:"wd_"+Date.now(), uid:session.uid, user:session.fullName, userPhone:session.phone||"—", userEmail:session.email||"—", amount, method, upiId, status:"pending", time:new Date().toISOString() };
       // Deduct chips immediately
       const idx = users.findIndex(u => u.uid === session.uid);
       if (idx >= 0) {
