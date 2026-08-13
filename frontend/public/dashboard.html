@@ -457,7 +457,7 @@
     }
     function renderMatchRoom() {
       _lastMatchHash = "";
-      _paintMatchRoom(window.WinzoSets.get());
+      window.WinzoSets.getAsync().then(arr => _paintMatchRoom(arr));
     }
 
     window.acceptSet = async function(id) {
