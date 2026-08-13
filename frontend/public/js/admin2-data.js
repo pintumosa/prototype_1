@@ -37,7 +37,7 @@ function mapSet(r) {
 }
 function mapDeposit(r) {
   return { id:r.id, uid:r.uid, user:r.user_name, userPhone:r.user_phone,
-    userEmail:r.user_email, amount:r.amount, type:"Deposit",
+    userEmail:r.user_email, amount:r.amount, type:"Deposit Request",
     method:r.method, txnId:r.txn_id, proofUrl:r.proof_url||null, status:r.status, time:r.created_at };
 }
 function mapWithdraw(r) {

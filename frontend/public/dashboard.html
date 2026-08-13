@@ -129,7 +129,7 @@
           if (!txnId) return window.WinzoAuth.toast('Please enter your Transaction ID.','error');
           var s = window.WinzoAuth.session();
           var deps = JSON.parse(localStorage.getItem('winzo_deposits')||'[]');
-          deps.unshift({id:'dep_'+Date.now(),user:s.fullName,userPhone:s.phone||'—',userEmail:s.email||'—',amount:Number(amount),type:'Deposit Request',method:method,txnId:txnId,status:'pending',time:new Date().toLocaleString('en-IN')});
+          deps.unshift({id:'dep_'+Date.now(),uid:s.uid||null,user:s.fullName,userPhone:s.phone||'—',userEmail:s.email||'—',amount:Number(amount),type:'Deposit Request',method:method,txnId:txnId,status:'pending',time:new Date().toISOString()});
           localStorage.setItem('winzo_deposits',JSON.stringify(deps));
           if(window.WinzoDeposits) window.WinzoDeposits.saveOne(deps[0]);
           document.getElementById('upi-modal').setAttribute('hidden','');
