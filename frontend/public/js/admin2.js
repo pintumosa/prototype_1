@@ -176,17 +176,9 @@ window.approveWithdrawRequest = function(id) {
   var w = wds.find(function(x){ return x.id === id; });
   if (!w) return;
   w.status = "approved";
-  var users = getLiveUsers();
-  var u = users.find(function(x){ return x.fullName === w.user || x.phone === w.userPhone || x.email === w.userEmail; });
-  if (u) {
-    u.chips = Math.max(0, (Number(u.chips) || 0) - Number(w.amount));
-    u.wallet = u.chips;
-    saveLiveUsers(users);
-    if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", u.uid).then(function(){});
-  }
   try { localStorage.setItem("winzo_withdraws", JSON.stringify(wds)); } catch(e) {}
   if (window.WINZO_SB) window.WINZO_SB.from("withdraws").update({ status: "approved" }).eq("id", id).then(function(){});
-  showToast("Withdrawal approved & ₹" + w.amount + " deducted from " + w.user, "success");
+  showToast("Withdrawal approved for ₹" + Number(w.amount).toLocaleString("en-IN") + " — " + w.user, "success");
 };
 
 window.rejectWithdrawRequest = function(id) {
