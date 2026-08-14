@@ -170,11 +170,12 @@ window.adminShowDocModal = function(url) {
 };
 
 window.approveWithdrawRequest = function(id) {
+  var row = document.querySelector("[data-wd-id='" + id + "']");
+  if (row) row.remove();
   var wds = getLiveWithdrawals();
   var w = wds.find(function(x){ return x.id === id; });
   if (!w) return;
   w.status = "approved";
-  // Deduct chips from user
   var users = getLiveUsers();
   var u = users.find(function(x){ return x.fullName === w.user || x.phone === w.userPhone || x.email === w.userEmail; });
   if (u) {
@@ -186,17 +187,17 @@ window.approveWithdrawRequest = function(id) {
   try { localStorage.setItem("winzo_withdraws", JSON.stringify(wds)); } catch(e) {}
   if (window.WINZO_SB) window.WINZO_SB.from("withdraws").update({ status: "approved" }).eq("id", id).then(function(){});
   showToast("Withdrawal approved & ₹" + w.amount + " deducted from " + w.user, "success");
-  window.syncAndReload("recent-withdrawals", "Recent Withdrawal Requests");
 };
 
 window.rejectWithdrawRequest = function(id) {
+  var row = document.querySelector("[data-wd-id='" + id + "']");
+  if (row) row.remove();
   var wds = getLiveWithdrawals();
   var w = wds.find(function(x){ return x.id === id; });
   if (!w) return;
   w.status = "rejected";
   try { localStorage.setItem("winzo_withdraws", JSON.stringify(wds)); } catch(e) {}
   if (window.WINZO_SB) window.WINZO_SB.from("withdraws").update({ status: "rejected" }).eq("id", id).then(function(){});
-  // Refund chips back to user
   var users = getLiveUsers();
   var u = users.find(function(x){ return x.uid === w.uid; });
   if (u) {
@@ -206,10 +207,12 @@ window.rejectWithdrawRequest = function(id) {
     if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", u.uid).then(function(){});
   }
   showToast("Withdrawal rejected. ₹" + Number(w.amount).toLocaleString("en-IN") + " refunded to " + (w.user||"user") + ".", "error");
-  window.syncAndReload("recent-withdrawals", "Recent Withdrawal Requests");
 };
 
 window.approveDepositRequest = function(id) {
+  // Remove row immediately
+  var row = document.querySelector("[data-dep-id='" + id + "']");
+  if (row) row.remove();
   var deps = getLiveDeposits();
   var d = deps.find(function(x){ return x.id === id; });
   if (!d) return;
@@ -225,20 +228,18 @@ window.approveDepositRequest = function(id) {
   try { localStorage.setItem("winzo_deposits", JSON.stringify(deps)); } catch(e) {}
   if (window.WINZO_SB) window.WINZO_SB.from("deposits").update({ status:"success" }).eq("id", id).then(function(){});
   showToast("Approved & ₹" + Number(d.amount).toLocaleString("en-IN") + " chips credited to " + d.user, "success");
-  window.syncAndReload("new-deposit-requests", "New Deposit Requests");
 };
 
 window.rejectDepositRequest = function(id) {
+  var row = document.querySelector("[data-dep-id='" + id + "']");
+  if (row) row.remove();
   var deps = getLiveDeposits();
   var d = deps.find(function(x){ return x.id === id; });
   if (!d) return;
   d.status = "rejected";
   try { localStorage.setItem("winzo_deposits", JSON.stringify(deps)); } catch(e) {}
-  if (window.WINZO_SB) {
-    window.WINZO_SB.from("deposits").update({ status:"rejected" }).eq("id", id).then(function(){});
-  }
+  if (window.WINZO_SB) window.WINZO_SB.from("deposits").update({ status:"rejected" }).eq("id", id).then(function(){});
   showToast("Request rejected.", "error");
-  window.syncAndReload("new-deposit-requests", "New Deposit Requests");
 };
 
 window.adminDeleteUser = async function (uid) {

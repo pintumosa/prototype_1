@@ -292,7 +292,7 @@ ${all.length ? all.map(function(w,i){
         <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;color:var(--danger);border-color:var(--danger);" onclick="rejectWithdrawRequest('${w.id}')"><i class="ph ph-x"></i> Reject</button>
        </td>`
     : `<td>${statusBadge(w.status)}</td>`;
-  return `<tr><td>${i+1}</td><td style="font-family:var(--font-head);font-size:11px;color:var(--text-muted)">${(w.id||"—").toUpperCase()}</td><td>${w.user||"—"}</td><td>${w.userPhone||"—"}</td><td style="color:var(--danger);font-weight:700">${rupee(w.amount)}</td><td>${w.method||"UPI"}</td><td style="font-size:12px;">${w.upiId||"—"}</td><td style="font-size:11px;color:var(--text-muted);">${fmtTime(w.time)}</td><td>${statusBadge(w.status||"pending")}</td>${actions}</tr>`;
+  return `<tr data-wd-id="${w.id}"><td>${i+1}</td><td style="font-family:var(--font-head);font-size:11px;color:var(--text-muted)">${(w.id||"—").toUpperCase()}</td><td>${w.user||"—"}</td><td>${w.userPhone||"—"}</td><td style="color:var(--danger);font-weight:700">${rupee(w.amount)}</td><td>${w.method||"UPI"}</td><td style="font-size:12px;">${w.upiId||"—"}</td><td style="font-size:11px;color:var(--text-muted);">${fmtTime(w.time)}</td><td>${statusBadge(w.status||"pending")}</td>${actions}</tr>`;
 }).join("") : emptyRow(10,"No withdrawal requests yet.")}
 </tbody></table></div>`;
 };
