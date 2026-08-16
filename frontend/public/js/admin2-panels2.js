@@ -142,7 +142,7 @@ PANELS["search-screenshots"] = function() {
       ? "<button class='btn btn-secondary' style='padding:3px 8px;font-size:11px;' onclick=\""+(storjKey ? "adminViewKyc('"+storjKey+"')" : "adminShowDocModal('"+imgUrl+"')")+"\"><i class='ph ph-image'></i> View</button>"
       : "—";
     var actions = "—";
-    if (!r._type && r.status === "pending") {
+    if (!r._type && r.status === "pending" && isFirstInGroup) {
       var prize = Math.floor(Number(r.amount||0) * 2 * 0.95);
       actions = "<div style='display:flex;gap:6px;flex-wrap:wrap;'>"
         + "<button class='btn btn-secondary' style='padding:4px 10px;font-size:11px;color:#4ade80;border-color:#4ade80;' onclick=\"adminDeclareWinner('"+r.id+"','"+r.submitterUid+"','"+r.submitterName+"',"+prize+")\"><i class='ph-fill ph-trophy'></i> "+r.submitterName+"</button>"
