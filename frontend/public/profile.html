@@ -44,6 +44,22 @@
       </div>
     </div>
 
+    <!-- Tab Nav -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+      <button id="tab-account" onclick="switchTab('account')" class="btn btn-primary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-user"></i> Account</button>
+      <button id="tab-transactions" onclick="switchTab('transactions')" class="btn btn-secondary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-clock-counter-clockwise"></i> Transactions</button>
+    </div>
+
+    <!-- Transactions Tab -->
+    <div id="section-transactions" style="display:none;">
+      <div class="card">
+        <div class="section-title" style="margin-bottom:16px;"><h2 style="font-size:1.2rem;">Transaction History</h2></div>
+        <div id="txn-list"><p style="color:var(--text-secondary);font-size:14px;">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Account Tab -->
+    <div id="section-account">
     <div class="card" style="margin-bottom:24px;">
       <div class="section-title" style="margin-bottom:16px;">
         <h2 style="font-size:1.2rem;">Account Details</h2>
@@ -122,6 +138,7 @@
         </form>
       </div>
     </div>
+    </div><!-- /section-account -->
   </main>
 
   <footer class="footer"><div class="container"><p><strong>WinzoIndia</strong> · Play responsibly.</p></div></footer>
@@ -261,6 +278,43 @@
           btn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Re-submit Documents';
         }
       });
+    }
+
+    function switchTab(tab) {
+      document.getElementById('section-account').style.display = tab === 'account' ? '' : 'none';
+      document.getElementById('section-transactions').style.display = tab === 'transactions' ? '' : 'none';
+      document.getElementById('tab-account').className = 'btn ' + (tab === 'account' ? 'btn-primary' : 'btn-secondary');
+      document.getElementById('tab-transactions').className = 'btn ' + (tab === 'transactions' ? 'btn-primary' : 'btn-secondary');
+      if (tab === 'transactions') loadTransactions();
+    }
+
+    let txnLoaded = false;
+    async function loadTransactions() {
+      if (txnLoaded) return;
+      txnLoaded = true;
+      const el = document.getElementById('txn-list');
+      if (!window.WINZO_SB || !session) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>'; return; }
+      const uid = session.uid;
+      const [{ data: deps }, { data: wds }] = await Promise.all([
+        window.WINZO_SB.from('deposits').select('id,amount,status,created_at').eq('uid', uid).order('created_at', { ascending: false }),
+        window.WINZO_SB.from('withdraws').select('id,amount,status,created_at').eq('uid', uid).order('created_at', { ascending: false })
+      ]);
+      const rows = [
+        ...(deps || []).map(d => ({ ...d, type: 'Deposit' })),
+        ...(wds  || []).map(w => ({ ...w, type: 'Withdraw' }))
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      if (!rows.length) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No transactions yet.</p>'; return; }
+      const statusColor = { approved: '#22c55e', pending: '#f59e0b', rejected: '#ef4444' };
+      el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="color:var(--text-secondary);text-align:left;">
+          <th style="padding:8px 6px;">Type</th><th style="padding:8px 6px;">Amount</th><th style="padding:8px 6px;">Status</th><th style="padding:8px 6px;">Date</th>
+        </tr></thead><tbody>` +
+        rows.map(r => `<tr style="border-top:1px solid var(--border-subtle);">
+          <td style="padding:8px 6px;">${r.type}</td>
+          <td style="padding:8px 6px;">₹${r.amount}</td>
+          <td style="padding:8px 6px;color:${statusColor[r.status] || 'inherit'};font-weight:600;">${r.status}</td>
+          <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+        </tr>`).join('') + '</tbody></table>';
     }
 
     async function handleChangePassword() {
