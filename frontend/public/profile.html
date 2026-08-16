@@ -48,6 +48,15 @@
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
       <button id="tab-account" onclick="switchTab('account')" class="btn btn-primary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-user"></i> Account</button>
       <button id="tab-transactions" onclick="switchTab('transactions')" class="btn btn-secondary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-clock-counter-clockwise"></i> Transactions</button>
+      <button id="tab-games" onclick="switchTab('games')" class="btn btn-secondary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-game-controller"></i> Game History</button>
+    </div>
+
+    <!-- Games Tab -->
+    <div id="section-games" style="display:none;">
+      <div class="card">
+        <div class="section-title" style="margin-bottom:16px;"><h2 style="font-size:1.2rem;">Game History</h2></div>
+        <div id="games-list"><p style="color:var(--text-secondary);font-size:14px;">Loading…</p></div>
+      </div>
     </div>
 
     <!-- Transactions Tab -->
@@ -281,11 +290,12 @@
     }
 
     function switchTab(tab) {
-      document.getElementById('section-account').style.display = tab === 'account' ? '' : 'none';
-      document.getElementById('section-transactions').style.display = tab === 'transactions' ? '' : 'none';
-      document.getElementById('tab-account').className = 'btn ' + (tab === 'account' ? 'btn-primary' : 'btn-secondary');
-      document.getElementById('tab-transactions').className = 'btn ' + (tab === 'transactions' ? 'btn-primary' : 'btn-secondary');
+      ['account','transactions','games'].forEach(t => {
+        document.getElementById('section-' + t).style.display = t === tab ? '' : 'none';
+        document.getElementById('tab-' + t).className = 'btn ' + (t === tab ? 'btn-primary' : 'btn-secondary');
+      });
       if (tab === 'transactions') loadTransactions();
+      if (tab === 'games') loadGames();
     }
 
     let txnLoaded = false;
@@ -315,6 +325,41 @@
           <td style="padding:8px 6px;color:${statusColor[r.status] || 'inherit'};font-weight:600;">${r.status}</td>
           <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
         </tr>`).join('') + '</tbody></table>';
+    }
+
+    let gamesLoaded = false;
+    async function loadGames() {
+      if (gamesLoaded) return;
+      gamesLoaded = true;
+      const el = document.getElementById('games-list');
+      if (!window.WINZO_SB || !session) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>'; return; }
+      const uid = session.uid;
+      const { data } = await window.WINZO_SB.from('results')
+        .select('id,game_type,amount,result,status,submitter_uid,opponent_name,submitter_name,created_at')
+        .or(`submitter_uid.eq.${uid},opponent_uid.eq.${uid}`)
+        .order('created_at', { ascending: false });
+      if (!data || !data.length) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No games played yet.</p>'; return; }
+      const resultColor = { won: '#22c55e', lost: '#ef4444', cancelled: '#f59e0b' };
+      el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="color:var(--text-secondary);text-align:left;">
+          <th style="padding:8px 6px;">Game</th><th style="padding:8px 6px;">Opponent</th><th style="padding:8px 6px;">Tokens</th><th style="padding:8px 6px;">Result</th><th style="padding:8px 6px;">Date</th>
+        </tr></thead><tbody>` +
+        data.map(r => {
+          const isSetter = r.submitter_uid === uid;
+          const opponent = isSetter ? (r.opponent_name || '—') : (r.submitter_name || '—');
+          // result field is from submitter's perspective; flip if current user is opponent
+          const rawResult = (r.result || '').toLowerCase();
+          let myResult = rawResult;
+          if (!isSetter) { if (rawResult === 'won') myResult = 'lost'; else if (rawResult === 'lost') myResult = 'won'; }
+          const color = resultColor[myResult] || 'inherit';
+          return `<tr style="border-top:1px solid var(--border-subtle);">
+            <td style="padding:8px 6px;text-transform:capitalize;">${r.game_type || '—'}</td>
+            <td style="padding:8px 6px;">${opponent}</td>
+            <td style="padding:8px 6px;">₹${r.amount}</td>
+            <td style="padding:8px 6px;color:${color};font-weight:600;text-transform:capitalize;">${myResult || r.status || '—'}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`;
+        }).join('') + '</tbody></table>';
     }
 
     async function handleChangePassword() {
