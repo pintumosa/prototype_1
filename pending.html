@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account Pending — WinzoIndia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .pending-wrap {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+    .pending-card {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      padding: 48px 36px;
+    }
+    .pending-icon {
+      font-size: 3.5rem;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .pending-card h1 { font-size: 1.6rem; margin-bottom: 12px; }
+    .pending-card p  { color: var(--text-secondary); line-height: 1.7; margin-bottom: 24px; }
+    .pending-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand">
+        <div class="brand-mark">W</div>
+        <div class="brand-name">Winzo<span>India</span></div>
+      </a>
+    </div>
+  </nav>
+
+  <div class="pending-wrap">
+    <div class="card pending-card">
+      <div class="pending-icon"><i class="ph-fill ph-hourglass-medium"></i></div>
+      <h1>Account Under Review</h1>
+      <p>
+        Your account is awaiting admin approval. Once our team verifies your KYC details,
+        you'll get full access to all games and the lobby.
+      </p>
+      <p style="font-size:13px;">
+        This usually takes a few minutes. Contact us on WhatsApp if it's been more than 24 hours.
+      </p>
+      <div class="pending-actions">
+        <button id="check-btn" class="btn btn-primary">
+          <i class="ph ph-arrows-clockwise"></i> Check Again
+        </button>
+        <a href="#" id="logout-btn" class="btn btn-secondary">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    const session = window.WinzoAuth.session();
+    if (!session) window.location.href = "login.html";
+
+    document.getElementById("check-btn").addEventListener("click", () => {
+      const users = window.WinzoAuth.getUsers();
+      const fresh = users.find(u => u.uid === session.uid);
+      if (fresh && fresh.kycVerified) {
+        window.location.href = "dashboard.html";
+      } else {
+        window.WinzoAuth.toast("Still pending. Please wait for admin approval.", "info");
+      }
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", (e) => {
+      e.preventDefault();
+      window.WinzoAuth.logout();
+    });
+  </script>
+</body>
+</html>

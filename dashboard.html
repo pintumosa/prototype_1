@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — WinzoIndia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-testid="dashboard-page">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand">
+        <div class="brand-mark">W</div>
+        <div class="brand-name">Winzo<span>India</span></div>
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="dashboard.html" class="active">Lobby</a></li>
+        <li><a href="ludo.html">Ludo</a></li>
+        <li><a href="snake-ladder.html">Snake &amp; Ladder</a></li>
+        <li><a href="profile.html">Profile</a></li>
+      </ul>
+      <a href="https://wa.me/919812543183" target="_blank" rel="noopener" class="wz-helpline" title="WhatsApp Helpline"><i class="ph-fill ph-whatsapp-logo"></i><span> +91-9812543183</span></a>
+      <div class="nav-actions">
+        <a href="profile.html" class="btn btn-secondary" data-testid="nav-profile-link">
+          <i class="ph ph-user-circle"></i> <span data-user-name>Player</span>
+        </a>
+        <a href="#" id="logout-btn" class="btn btn-primary" data-testid="logout-btn">Logout</a>
+      </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <!-- USER HERO -->
+  <section class="container" style="padding-top:32px;">
+    <div class="user-hero card" data-testid="user-hero">
+      <div class="user-avatar-lg"><i class="ph-fill ph-user"></i></div>
+      <h1 style="margin-top:16px;">Welcome, <span data-user-name style="color:var(--accent);">Player</span></h1>
+      <p class="bonus-line" data-testid="bonus-contact">
+        <i class="ph-fill ph-whatsapp-logo"></i>
+        Bonus add karwane ke lie contact kare
+        <a id="bonus-phone-link" href="#" class="bonus-phone" data-testid="bonus-phone" target="_blank" rel="noopener">+91 95186-85134</a>
+      </p>
+      <button class="btn btn-primary" id="open-upi" data-testid="open-upi-btn" style="margin-top:14px;" onclick="var _s=(window.WinzoSettings?window.WinzoSettings.get():{});var _bp=_s.bonusPhone||'+91 95186-85134';document.getElementById('upi-modal').removeAttribute('hidden');document.getElementById('upi-phone-display').textContent=_bp;document.getElementById('upi-wa-link').href='https://wa.me/'+_bp.replace(/[^0-9]/g,'');var _qr=_s.upiQrUrl||'';var _wrap=document.getElementById('upi-qr-wrap');var _img=document.getElementById('upi-qr-img');var _lbl=document.getElementById('upi-qr-label');if(_qr){_img.src=_qr;_lbl.textContent=(_s.upiId||'');_wrap.style.display='block';}else{_wrap.style.display='none';}">
+        <i class="ph-fill ph-qr-code"></i> Pay via UPI &amp; Add Chips
+      </button>
+    </div>
+  </section>
+
+  <!-- UPI PAY MODAL -->
+  <div id="upi-modal" class="modal" hidden data-testid="upi-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel" style="max-width:440px;">
+      <div class="modal-head">
+        <h3><i class="ph-fill ph-qr-code" style="color:var(--accent);"></i> Add Chips via UPI</h3>
+        <button class="modal-close" id="close-upi" onclick="document.getElementById('upi-modal').setAttribute('hidden','')"><i class="ph ph-x"></i></button>
+      </div>
+
+      <!-- QR Code (loaded from admin settings) -->
+      <div id="upi-qr-wrap" style="text-align:center;margin-bottom:16px;display:none;">
+        <img id="upi-qr-img" src="" alt="UPI QR Code" style="width:200px;height:200px;border-radius:8px;object-fit:contain;background:#111;" />
+        <p id="upi-qr-label" style="margin-top:8px;color:var(--accent);font-weight:700;font-size:14px;"></p>
+      </div>
+
+      <!-- Notice -->
+      <div style="background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.35);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;line-height:1.6;">
+        <span style="color:#ffc107;font-weight:700;">⚠️ Note:</span> Amounts <strong>below ₹1000</strong> must be paid via <strong>QR scanner only</strong>.<br/>
+        <span style="color:var(--text-muted);font-size:12px;">₹1000 से कम की राशि केवल <strong>QR स्कैनर</strong> से ही भेजें।</span>
+      </div>
+
+      <!-- Phone number -->
+      <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Pay to this number</div>
+          <div id="upi-phone-display" style="font-size:1.1rem;font-weight:700;color:var(--accent);letter-spacing:1px;">+91 95186-85134</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="navigator.clipboard.writeText(document.getElementById('upi-phone-display').textContent).then(()=>window.WinzoAuth.toast('Number copied!','success'))" class="btn btn-secondary" style="padding:8px 14px;font-size:12px;white-space:nowrap;">
+            <i class="ph ph-copy"></i> Copy
+          </button>
+          <a id="upi-wa-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:8px 14px;font-size:12px;white-space:nowrap;color:#25d366;border-color:#25d366;">
+            <i class="ph-fill ph-whatsapp-logo"></i> WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <div class="form" style="gap:16px;display:flex;flex-direction:column;">
+        <!-- Payment Method -->
+        <div class="field">
+          <label>Select Payment Method</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+            <label class="pay-method-opt">
+              <input type="radio" name="pay-method" value="PhonePe" />
+              <span><i class="ph-fill ph-device-mobile"></i> PhonePe</span>
+            </label>
+            <label class="pay-method-opt">
+              <input type="radio" name="pay-method" value="Paytm" />
+              <span><i class="ph-fill ph-wallet"></i> Paytm</span>
+            </label>
+            <label class="pay-method-opt">
+              <input type="radio" name="pay-method" value="GooglePay" />
+              <span><i class="ph-fill ph-google-logo"></i> Google Pay</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Amount -->
+        <div class="field">
+          <label for="upi-amount">Enter Amount (₹)</label>
+          <input id="upi-amount" type="number" min="1" placeholder="e.g. 500" style="width:100%;" />
+        </div>
+
+        <!-- Transaction ID -->
+        <div class="field">
+          <label for="upi-txn-id">Transaction ID / UTR</label>
+          <input id="upi-txn-id" type="text" placeholder="Enter your payment transaction ID" style="width:100%;" />
+        </div>
+
+        <button class="btn btn-primary btn-block" id="upi-submit-btn" onclick="
+          var method = document.querySelector('input[name=\'pay-method\']:checked')?.value;
+          var amount = document.getElementById('upi-amount').value.trim();
+          var txnId  = document.getElementById('upi-txn-id').value.trim();
+          if (!method) return window.WinzoAuth.toast('Please select a payment method.','error');
+          if (!amount || Number(amount) < 1) return window.WinzoAuth.toast('Enter a valid amount.','error');
+          if (!txnId) return window.WinzoAuth.toast('Please enter your Transaction ID.','error');
+          var s = window.WinzoAuth.session();
+          var deps = JSON.parse(localStorage.getItem('winzo_deposits')||'[]');
+          deps.unshift({id:'dep_'+Date.now(),uid:s.uid||null,user:s.fullName,userPhone:s.phone||'—',userEmail:s.email||'—',amount:Number(amount),type:'Deposit Request',method:method,txnId:txnId,status:'pending',time:new Date().toISOString()});
+          localStorage.setItem('winzo_deposits',JSON.stringify(deps));
+          if(window.WinzoDeposits) window.WinzoDeposits.saveOne(deps[0]);
+          document.getElementById('upi-modal').setAttribute('hidden','');
+          document.getElementById('upi-amount').value='';
+          document.getElementById('upi-txn-id').value='';
+          document.querySelectorAll('input[name=\'pay-method\']').forEach(function(r){r.checked=false;});
+          window.WinzoAuth.toast('Request submitted! Chips will be added after admin verification.','success',4000);
+        ">
+          <i class="ph-fill ph-paper-plane-tilt"></i> Submit Request
+        </button>
+        <p style="font-size:12px;color:var(--text-secondary);text-align:center;margin:0;">
+          Chips will be credited after admin verification.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- WALLET CHIPS -->
+  <section class="container" style="padding-top:24px;">
+    <div class="wallet-chips-card" data-testid="wallet-chips-card">
+      <div class="wallet-chips-head">
+        <span class="eyebrow"><i class="ph-fill ph-poker-chip"></i> Wallet Chips</span>
+        <span class="tag-manual">Manually added by admin</span>
+      </div>
+      <div class="wallet-chips-value" data-testid="wallet-chips-value" id="wallet-chips">0</div>
+      <p class="wallet-chips-note">Chips are added by our admin after successful deposit confirmation.</p>
+      <button class="btn btn-primary" style="margin-top:14px;" onclick="document.getElementById('withdraw-modal').removeAttribute('hidden')">
+        <i class="ph-fill ph-arrow-up-right"></i> Withdraw Chips
+      </button>
+    </div>
+  </section>
+
+  <!-- WITHDRAW MODAL -->
+  <div id="withdraw-modal" class="modal" hidden>
+    <div class="modal-backdrop" onclick="document.getElementById('withdraw-modal').setAttribute('hidden','')"></div>
+    <div class="modal-panel" style="max-width:440px;">
+      <div class="modal-head">
+        <h3><i class="ph-fill ph-arrow-up-right" style="color:var(--accent);"></i> Withdraw Chips</h3>
+        <button class="modal-close" onclick="document.getElementById('withdraw-modal').setAttribute('hidden','')"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="form" style="gap:16px;display:flex;flex-direction:column;">
+        <div class="field">
+          <label for="wd-amount">Amount (₹)</label>
+          <input id="wd-amount" type="number" min="1" placeholder="e.g. 200" style="width:100%;" />
+        </div>
+        <div class="field">
+          <label for="wd-method">Payment Method</label>
+          <select id="wd-method" style="width:100%;">
+            <option value="UPI">UPI</option>
+            <option value="PhonePe">PhonePe</option>
+            <option value="Paytm">Paytm</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="wd-upi">UPI ID / Account No.</label>
+          <input id="wd-upi" type="text" placeholder="yourname@upi or account number" style="width:100%;" />
+        </div>
+        <button class="btn btn-primary btn-block" onclick="submitWithdraw()">
+          <i class="ph-fill ph-paper-plane-tilt"></i> Submit Request
+        </button>
+        <p style="font-size:12px;color:var(--text-secondary);text-align:center;margin:0;">Withdrawals are processed by admin within 24 hours.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER + Report -->
+  <section class="container" style="padding-top:24px;">
+    <div class="disclaimer" data-testid="disclaimer-card">
+      <div class="disclaimer-icon"><i class="ph-fill ph-warning-diamond"></i></div>
+      <div style="flex:1;">
+        <h3 class="disclaimer-title">Important Notice</h3>
+        <p class="disclaimer-text">
+          If your opponent asks you to play on any <strong>other ground</strong> (outside WinzoIndia), <strong>inform us immediately</strong> — you will be rewarded for reporting.
+        </p>
+        <p class="disclaimer-warn">
+          <i class="ph-fill ph-camera"></i>
+          <strong>WIN PROOF REQUIRED</strong> · Always capture a screenshot of your winning screen.
+        </p>
+        <button class="btn btn-primary" id="open-report" data-testid="open-report-btn" style="margin-top:14px;">
+          <i class="ph-fill ph-siren"></i> Report Opponent &amp; Earn Reward
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SET GAME BAR -->
+  <section class="container" style="padding-top:24px;">
+    <div class="setbar card" data-testid="setbar-card">
+      <div class="setbar-head">
+        <span class="eyebrow"><i class="ph-fill ph-flag-checkered"></i> Set a Game</span>
+      </div>
+      <form id="setbar-form" class="setbar-row" data-testid="setbar-form">
+        <div class="setbar-field">
+          <label for="setValue">Enter Value</label>
+          <input id="setValue" name="value" type="number" min="1" placeholder="e.g. 100" required data-testid="setbar-value-input" oninput="updateWinPreview(this.value)" />
+          <div id="win-preview" style="font-size:12px;color:#4caf50;margin-top:4px;font-weight:600;min-height:16px;"></div>
+        </div>
+        <div class="setbar-field">
+          <label for="setGameType">Game Type</label>
+          <select id="setGameType" name="gameType" required data-testid="setbar-game-type">
+            <option value="full">Full Game</option>
+            <option value="1goti">1 Goti</option>
+            <option value="2goti">2 Goti</option>
+            <option value="3goti">3 Goti</option>
+            <option value="ulta">Ulta Ludo</option>
+            <option value="1six">1 Six</option>
+            <option value="snake">Snake &amp; Ladder</option>
+            <option value="ulta-snake">Ulta Snake &amp; Ladder</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary setbar-btn" data-testid="setbar-set-btn">
+          <i class="ph-fill ph-check-circle"></i> Set
+        </button>
+      </form>
+      <div id="setbar-feedback" class="setbar-feedback" hidden></div>
+    </div>
+  </section>
+
+  <!-- OPEN CHALLENGES (global sets pool) -->
+  <section class="container" style="padding-top:24px;padding-bottom:32px;">
+    <div class="card" style="padding:24px 28px;">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;"><i class="ph-fill ph-sword" style="color:var(--accent);"></i> Open Challenges</h2>
+        <span>Live matches waiting for opponents</span>
+      </div>
+      <div id="sets-list" data-testid="sets-list"></div>
+    </div>
+  </section>
+
+  <!-- MATCH ROOM WIDGET -->
+  <section class="container" style="padding-top:24px;" id="match-room-section" hidden>
+    <div class="card" id="match-room-card" style="padding:24px 28px;border:1px solid var(--accent);"></div>
+  </section>
+
+  <!-- REPORT MODAL -->
+  <div id="report-modal" class="modal" hidden data-testid="report-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-head">
+        <h3><i class="ph-fill ph-siren" style="color:var(--danger);"></i> Report Opponent</h3>
+        <button class="modal-close" id="close-report" data-testid="close-report-btn"><i class="ph ph-x"></i></button>
+      </div>
+      <form id="report-form" class="form" data-testid="report-form">
+        <div class="field">
+          <label for="rOpponent">Opponent Username or Phone</label>
+          <input id="rOpponent" name="opponent" type="text" required placeholder="e.g. raju_98 or +91 98xxxxxxxx" data-testid="report-opponent-input" />
+        </div>
+        <div class="field">
+          <label for="rDetails">What happened?</label>
+          <textarea id="rDetails" name="details" rows="3" required placeholder="They asked to play on another app…" data-testid="report-details-input"></textarea>
+        </div>
+        <div class="field">
+          <label>Win Proof / Screenshot (required)</label>
+          <label class="file-drop" for="rProof" data-testid="report-proof-upload">
+            <i class="ph ph-cloud-arrow-up"></i>
+            <p><strong>Click to upload</strong> your win screenshot</p>
+            <p class="hint">JPG / PNG · Max 5 MB</p>
+            <input id="rProof" type="file" accept="image/*" required />
+          </label>
+          <div id="rProofInfo" class="file-info"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" data-testid="submit-report-btn">
+          <i class="ph-fill ph-paper-plane-tilt"></i> Submit Report
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer"><div class="container"><p><strong>WinzoIndia</strong> · Play responsibly. 18+ only.</p></div></footer>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="mbn-item active">
+      <i class="ph-fill ph-house"></i><span>Lobby</span>
+    </a>
+    <a href="ludo.html" class="mbn-item">
+      <i class="ph-fill ph-crown"></i><span>Ludo</span>
+    </a>
+    <a href="snake-ladder.html" class="mbn-item">
+      <i class="ph-fill ph-path"></i><span>S&amp;L</span>
+    </a>
+    <a href="profile.html" class="mbn-item">
+      <i class="ph-fill ph-user-circle"></i><span>Profile</span>
+    </a>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const session = window.WinzoAuth.requireAuth();
+    if (!session) throw new Error("not authed");
+
+    function logChipLedger(uid, type, amount, direction, refId, note) {
+      if (!window.WINZO_SB || !uid) return;
+      window.WINZO_SB.from("chip_ledger").insert({
+        uid, type, amount, direction, ref_id: refId || null, note: note || null
+      }).then(function(){});
+    }
+
+    async function getChips(uid) {
+      if (window.WINZO_SB) {
+        try {
+          const { data } = await window.WINZO_SB.from("users").select("chips").eq("uid", uid).maybeSingle();
+          if (data) return Number(data.chips || 0);
+        } catch(e) {}
+      }
+      const u = window.WinzoAuth.getUsers().find(x => x.uid === uid);
+      return Number(u && (u.chips ?? u.wallet) || 0);
+    }
+    async function setChips(uid, val) {
+      const users = window.WinzoAuth.getUsers();
+      const u = users.find(x => x.uid === uid);
+      if (u) { u.chips = val; u.wallet = val; window.WinzoAuth.saveUsers(users); }
+      if (window.WINZO_SB) try { await window.WINZO_SB.from("users").update({ chips: val }).eq("uid", uid); } catch(e) {}
+    }
+
+    const GAME_LABELS = { full:"Full Game","1goti":"1 Goti","2goti":"2 Goti","3goti":"3 Goti",ulta:"Ulta Ludo","1six":"1 Six",snake:"Snake & Ladder","ulta-snake":"Ulta Snake & Ladder" };
+
+    async function refreshView() {
+      if (window.WINZO_SB) {
+        try {
+          const { data } = await window.WINZO_SB.from("users").select("*").eq("uid", session.uid).maybeSingle();
+          if (data) {
+            const users = window.WinzoAuth.getUsers();
+            const idx = users.findIndex(u => u.uid === session.uid);
+            const merged = { ...session, chips: data.chips||0, wallet: data.chips||0, kycVerified: data.kyc_verified };
+            if (idx >= 0) users[idx] = { ...users[idx], ...merged }; else users.push(merged);
+            window.WinzoAuth.saveUsers(users);
+          }
+        } catch(e) {}
+      }
+      const users = window.WinzoAuth.getUsers();
+      const fresh = users.find(u => u.uid === session.uid);
+      document.getElementById("wallet-chips").textContent = Number(fresh && (fresh.chips ?? fresh.wallet) || 0).toLocaleString("en-IN");
+      const settings = window.WinzoSettings.get();
+      const link = document.getElementById("bonus-phone-link");
+      link.textContent = settings.bonusPhone;
+      link.href = "https://wa.me/" + settings.bonusPhone.replace(/[^0-9]/g,"");
+    }
+    document.querySelectorAll("[data-user-name]").forEach(el => el.textContent = session.fullName.split(" ")[0]);
+    refreshView();
+    window.WinzoSets.getAsync().then(function(arr) { _paintSets(arr); _paintMatchRoom(arr); });
+    _subscribeMyRequests();
+
+    // Single poll every 10s — fetches sets + refreshes user every 3rd tick (30s)
+    var _pollCount = 0;
+    setInterval(function() {
+      if (document.hidden) return;
+      _pollCount++;
+      window.WinzoSets.getAsync().then(function(merged) { _paintSets(merged); _paintMatchRoom(merged); });
+      if (_pollCount % 3 === 0) refreshView();
+    }, 10000);
+
+    // Poll for incoming join requests (Player A) every 3s
+    setInterval(async function() {
+      if (!window.WINZO_SB || document.hidden) return;
+      const sets = await window.WinzoSets.getAsync();
+      const myChallengeIds = sets.filter(s => s.uid === session.uid && !s.acceptedBy).map(s => s.id);
+      if (!myChallengeIds.length) return;
+      let result; try { result = await window.WINZO_SB.from("join_requests").select("*").in("challenge_id", myChallengeIds).eq("status","pending"); } catch(e) { return; }
+      const data = result.data || [];
+      let changed = false;
+      data.forEach(r => {
+        if (_jrQueue.find(x => x.id === r.id)) return;
+        const s = sets.find(x => x.id === r.challenge_id);
+        r._value = s ? s.value : "?";
+        _jrQueue.push(r);
+        changed = true;
+      });
+      if (changed) _renderJRQueue();
+    }, 1000);
+    setInterval(async function() {
+      if (!window.WINZO_SB || document.hidden) return;
+      const ids = Object.values(_myPendingReqs);
+      if (!ids.length) return;
+      let res; try { res = await window.WINZO_SB.from("join_requests").select("id,challenge_id,status").in("id", ids); } catch(e) { return; }
+      (res.data||[]).forEach(async r => {
+        if (r.status === "accepted") {
+          delete _myPendingReqs[r.challenge_id];
+          localStorage.setItem("wz_my_match_"+session.uid, r.challenge_id);
+          window.WinzoAuth.toast("Matched! Game on.", "success");
+          // Force fresh fetch from Supabase by clearing stale local cache entry
+          const cached = window.WinzoSets.get();
+          const ci = cached.findIndex(x => x.id === r.challenge_id);
+          if (ci >= 0) { cached[ci].acceptedBy = session.uid; localStorage.setItem("winzo_sets_global", JSON.stringify(cached)); }
+          const arr = await window.WinzoSets.getAsync(); _lastSetsHash=""; _lastMatchHash=""; _paintSets(arr); _paintMatchRoom(arr);
+        } else if (r.status === "rejected" || r.status === "cancelled") {
+          delete _myPendingReqs[r.challenge_id];
+          _lastSetsHash=""; _paintSets(window.WinzoSets.get());
+          if (r.status === "rejected") window.WinzoAuth.toast("Your request was declined. You can resend.", "error", 3000);
+        }
+      });
+    }, 1000);
+
+    var _lastSetsHash = "";
+    var _myPendingReqs = {}; // challengeId -> requestId (pending)
+
+    function _paintSets(arr) {
+      const listEl = document.getElementById("sets-list");
+      const hash = JSON.stringify(arr.map(s => s.id + (s.acceptedBy||"")) + JSON.stringify(_myPendingReqs));
+      if (hash === _lastSetsHash) return;
+      _lastSetsHash = hash;
+      if (!arr.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
+      const visible = arr.filter(s => !s.acceptedBy);
+      if (!visible.length) { listEl.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:24px;">No open challenges. Be the first to set one!</p>`; return; }
+      listEl.innerHTML = visible.slice().reverse().map((s,i) => {
+        const mine = s.uid === session.uid || (!s.uid && s.byName === session.fullName.split(" ")[0]);
+        const label = GAME_LABELS[s.gameType] || s.gameType;
+        let action;
+        if (s.acceptedBy) {
+          action = `<div class="set-status accepted"><i class="ph-fill ph-handshake"></i> Matched with ${s.acceptedByName||"Player"}</div>`;
+        } else if (mine) {
+          action = `<button class="btn btn-secondary" onclick="cancelSet('${s.id}')"><i class="ph ph-x"></i> Cancel</button>`;
+        } else if (_myPendingReqs[s.id]) {
+          action = `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div style="font-size:12px;color:var(--success);font-weight:600;display:flex;align-items:center;gap:4px;"><i class="ph-fill ph-check-circle"></i> Request Sent</div>
+            <button class="btn btn-secondary" style="padding:5px 12px;font-size:12px;" onclick="resendGameRequest('${s.id}')"><i class="ph ph-arrow-clockwise"></i> Resend</button>
+          </div>`;
+        } else {
+          action = `<button class="btn btn-primary" onclick="acceptSet('${s.id}')"><i class="ph-fill ph-sword"></i> Send Game Request</button>`;
+        }
+        const displayName = mine ? `<span style="color:var(--accent);">You</span>` : `<span style="color:var(--accent);">${s.byName}</span>`;
+        return `<div class="set-row" data-testid="set-row-${i}"><div style="flex:1;font-size:15px;font-weight:600;">${displayName} ${mine ? "set" : "has set"} a challenge for <span style="color:var(--accent);">₹${Number(s.value).toLocaleString("en-IN")}</span> · <span class="set-tag" style="display:inline;">${label}</span></div><div>${action}</div></div>`;
+      }).join("");
+    }
+    function renderSets() {
+      _lastSetsHash = "";
+      _paintSets(window.WinzoSets.get());
+    }
+    function renderMatchRoom() {
+      _lastMatchHash = "";
+      const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
+      window.WinzoSets.getAsync().then(async arr => {
+        // If storedMatchId not in arr (filtered out), fetch it directly
+        if (storedMatchId && !arr.find(s => s.id === storedMatchId) && window.WINZO_SB) {
+          try {
+            const { data } = await window.WINZO_SB.from("challenges").select("*").eq("id", storedMatchId).maybeSingle();
+            if (data) arr.push({ id:data.id, gameId:data.game_id, uid:data.uid, byName:data.by_name, value:data.value, gameType:data.game_type, acceptedBy:data.accepted_by, acceptedByName:data.accepted_by_name, acceptedAt:data.accepted_at, roomCode:data.room_code, startedAt:data.started_at, status:data.status, at:data.at });
+          } catch(e) {}
+        }
+        _paintMatchRoom(arr);
+      });
+    }
+
+    window.acceptSet = async function(id) {
+      const arr = await window.WinzoSets.getAsync();
+      const s = arr.find(x => x.id === id);
+      if (!s || s.acceptedBy) return window.WinzoAuth.toast("Challenge already matched!", "error");
+      if (s.uid === session.uid) return window.WinzoAuth.toast("You cannot join your own challenge.", "error");
+      const fresh = window.WinzoAuth.getUsers().find(u => u.uid === session.uid);
+      if (!fresh || !fresh.kycVerified) return window.WinzoAuth.toast("Account pending approval.", "error");
+      const chips = Number(fresh.chips ?? fresh.wallet ?? 0);
+      if (chips < s.value) return window.WinzoAuth.toast(`Not enough chips! You have ${chips.toLocaleString("en-IN")}.`, "error", 4000);
+      if (!window.WINZO_SB) return window.WinzoAuth.toast("No connection.", "error");
+      // Cancel any existing pending request first
+      if (_myPendingReqs[id]) {
+        try { await window.WINZO_SB.from("join_requests").update({status:"cancelled"}).eq("id", _myPendingReqs[id]); } catch(e) {}
+      }
+      const req = { id: "jr_"+Date.now(), challenge_id: id, requester_uid: session.uid, requester_name: session.fullName.split(" ")[0], status: "pending", created_at: new Date().toISOString() };
+      const { error } = await window.WINZO_SB.from("join_requests").insert(req);
+      if (error) { console.error("join_requests insert error:", error); return window.WinzoAuth.toast("Failed to send request: " + (error.message||"unknown error"), "error", 5000); }
+      _myPendingReqs[id] = req.id;
+      _lastSetsHash = "";
+      _paintSets(window.WinzoSets.get());
+      window.WinzoAuth.toast("Request sent! Waiting for player to accept…", "success", 3000);
+    };
+
+    window.resendGameRequest = async function(id) {
+      delete _myPendingReqs[id];
+      _lastSetsHash = "";
+      await window.acceptSet(id);
+    };
+
+    // ── Join Request Queue (shown to challenge setter) ──────────────────────
+    var _jrTimers = {}; // requestId -> countdown interval
+    var _jrQueue = []; // pending requests for my open challenges
+
+    function _renderJRQueue() {
+      let el = document.getElementById("jr-queue");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "jr-queue";
+        el.style.cssText = "position:fixed;top:70px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:320px;width:calc(100vw - 32px);";
+        document.body.appendChild(el);
+      }
+      el.innerHTML = _jrQueue.map(r => `
+        <div id="jrcard-${r.id}" style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 16px;box-shadow:0 4px 24px rgba(0,0,0,0.5);">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px;"><i class="ph-fill ph-sword" style="color:var(--accent);"></i> Join Request</div>
+          <div style="font-weight:700;margin-bottom:10px;"><span style="color:var(--accent);">${r.requester_name}</span> wants to play your ₹${Number(r._value).toLocaleString("en-IN")} challenge</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" style="flex:1;padding:8px;" onclick="acceptJoinRequest('${r.id}','${r.challenge_id}','${r.requester_uid}')"><i class="ph-fill ph-check"></i> Accept</button>
+            <button class="btn btn-secondary" style="flex:1;padding:8px;" onclick="declineJoinRequest('${r.id}')"><i class="ph ph-x"></i> Decline</button>
+            <span id="jrtimer-${r.id}" style="font-size:13px;font-weight:700;color:var(--accent);min-width:24px;text-align:right;">10</span>
+          </div>
+        </div>`).join("");
+      // start countdowns
+      _jrQueue.forEach(r => {
+        if (_jrTimers[r.id]) return;
+        let t = 10;
+        _jrTimers[r.id] = setInterval(function() {
+          t--;
+          const el = document.getElementById("jrtimer-"+r.id);
+          if (el) el.textContent = t;
+          if (t <= 0) { clearInterval(_jrTimers[r.id]); delete _jrTimers[r.id]; declineJoinRequest(r.id); }
+        }, 1000);
+      });
+    }
+
+    window.acceptJoinRequest = async function(reqId, challengeId, requesterUid) {
+      clearInterval(_jrTimers[reqId]); delete _jrTimers[reqId];
+      try {
+        const arr = await window.WinzoSets.getAsync();
+        const s = arr.find(x => x.id === challengeId);
+        if (!s || s.acceptedBy) { window.WinzoAuth.toast("Challenge already matched.", "error"); _removeJR(reqId); return; }
+        const cur = await getChips(requesterUid);
+        if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {} _removeJR(reqId); return; }
+        await setChips(requesterUid, cur - s.value);
+        logChipLedger(requesterUid, "game_entry", s.value, "debit", challengeId, "Challenge accepted — ₹" + s.value + " entry");
+        const req = _jrQueue.find(r => r.id === reqId);
+        s.acceptedBy = requesterUid; s.acceptedByName = req ? req.requester_name : "Player"; s.acceptedAt = new Date().toISOString();
+        const localArr = window.WinzoSets.get();
+        const li = localArr.findIndex(x => x.id === challengeId);
+        if (li >= 0) localArr[li] = s; localStorage.setItem("winzo_sets_global", JSON.stringify(localArr));
+        _lastSetsHash = ""; _lastMatchHash = "";
+        if (window.WINZO_SB) {
+          try { await window.WINZO_SB.from("join_requests").update({status:"accepted"}).eq("id",reqId); } catch(e) {}
+          try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("challenge_id",challengeId).eq("status","pending").neq("id",reqId); } catch(e) {}
+          window.WinzoSets.saveOne(s);
+        }
+        _jrQueue = _jrQueue.filter(r => r.challenge_id !== challengeId);
+        Object.keys(_jrTimers).forEach(k => { if (_jrQueue.findIndex(r=>r.id===k)<0) { clearInterval(_jrTimers[k]); delete _jrTimers[k]; } });
+        _renderJRQueue();
+        window.WinzoAuth.toast("Matched! Game on.", "success");
+        const fresh = await window.WinzoSets.getAsync(); _lastSetsHash=""; _lastMatchHash=""; _paintSets(fresh); _paintMatchRoom(fresh);
+      } catch(e) { window.WinzoAuth.toast("Accept failed: " + e.message, "error", 5000); console.error("acceptJoinRequest error:", e); }
+    };
+
+    window.declineJoinRequest = async function(reqId) {
+      clearInterval(_jrTimers[reqId]); delete _jrTimers[reqId];
+      if (window.WINZO_SB) try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {}
+      _removeJR(reqId);
+    };
+
+    function _removeJR(reqId) {
+      _jrQueue = _jrQueue.filter(r => r.id !== reqId);
+      _renderJRQueue();
+    }
+
+    // Subscribe to join_requests for my open challenges
+    function _subscribeMyRequests() {} // replaced by polling
+
+    window.cancelSet = async function(id) {
+      const arr = await window.WinzoSets.getAsync();
+      const s = arr.find(x => x.id === id);
+      if (!s) return window.WinzoAuth.toast("Challenge not found.", "error");
+      if (s.uid !== session.uid) return window.WinzoAuth.toast("Not your challenge.", "error");
+      if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
+      try {
+        if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id); } catch(e) {}
+        await window.WinzoSets.delete(id);
+        renderSets();
+        window.WinzoAuth.toast("Challenge cancelled.", "success");
+      } catch(e) { window.WinzoAuth.toast("Cancel failed: " + e.message, "error", 5000); }
+    };
+
+    function updateWinPreview(val) {
+      const el = document.getElementById("win-preview");
+      const v = Number(val);
+      if (!v || v <= 0) { el.textContent = ""; return; }
+      const winning = Math.floor(v * 2 * 0.95);
+      el.textContent = "🏆 You will win ₹" + winning.toLocaleString("en-IN");
+    }
+
+    document.getElementById("setbar-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const val = Number(document.getElementById("setValue").value);
+      const gt = document.getElementById("setGameType").value;
+      if (!val || val < 1) return;
+      const users = window.WinzoAuth.getUsers();
+      const fresh = users.find(u => u.uid === session.uid);
+      if (!fresh || !fresh.kycVerified) return window.WinzoAuth.toast("Account pending admin approval.", "error", 4000);
+      const chips = Number(fresh.chips ?? fresh.wallet ?? 0);
+      if (val > chips) return window.WinzoAuth.toast(`Not enough chips! You have ${chips.toLocaleString("en-IN")}.`, "error", 4000);
+      fresh.chips = chips - val; fresh.wallet = fresh.chips;
+      window.WinzoAuth.saveUsers(users);
+      if (window.WINZO_SB) try { await window.WINZO_SB.from("users").update({ chips: fresh.chips }).eq("uid", session.uid); } catch(e) {}
+      logChipLedger(session.uid, "game_entry", val, "debit", null, "Challenge posted — ₹" + val + " entry");
+      const newSet = { id:"s_"+Date.now(), gameId:"WZ-"+Date.now().toString(36).toUpperCase()+Math.random().toString(36).substr(2,4).toUpperCase(), uid:session.uid, byName:session.fullName.split(" ")[0], value:val, gameType:gt, at:Date.now() };
+      // Optimistically add to local storage first so renderSets shows it immediately
+      const arr = window.WinzoSets.get();
+      arr.push(newSet);
+      localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
+      _lastSetsHash = ""; // force re-render
+      document.getElementById("setValue").value = "";
+      window.WinzoAuth.toast("Challenge posted!", "success");
+      const fb = document.getElementById("setbar-feedback");
+      fb.removeAttribute("hidden");
+      fb.innerHTML = `<i class="ph-fill ph-check-circle" style="color:var(--success);"></i> Your challenge for <strong>₹${val.toLocaleString("en-IN")}</strong> · ${GAME_LABELS[gt]||gt} is live! Waiting for an opponent.`;
+      renderSets();
+      renderMatchRoom();
+      // Then persist to Supabase in background
+      window.WinzoSets.saveOne(newSet);
+    });
+
+    var _lastMatchHash = "";
+    function _paintMatchRoom(arr) {
+      const results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
+      const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
+      const match = arr.find(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid))
+                 || (storedMatchId ? arr.find(s => s.id === storedMatchId) : null)
+                 || (!storedMatchId ? arr.find(s => !s.acceptedBy && s.uid === session.uid) : null);
+      const submitted = match ? !!results.find(r => r.challengeId === match.id && r.submitterUid === session.uid) : false;
+      if (match && !match.startedAt) { const fb = localStorage.getItem("wz_started_"+match.id); if (fb) match.startedAt = Number(fb); }
+      const hash = match ? (match.id + "|" + (match.acceptedBy||"pending") + "|" + (match.roomCode||"") + "|" + (match.startedAt||"") + "|" + submitted) : "none";
+      if (hash === _lastMatchHash) return;
+      _lastMatchHash = hash;
+      _renderMatchRoomWithArr(arr);
+    }
+    function _renderMatchRoomWithArr(arr) {
+      const results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
+      const storedMatchId = localStorage.getItem("wz_my_match_"+session.uid);
+      // Primary: find matched challenge for this user
+      let match = arr.find(s => s.acceptedBy && (s.uid === session.uid || s.acceptedBy === session.uid));
+      // Fallback: use stored match ID
+      if (!match && storedMatchId) match = arr.find(s => s.id === storedMatchId);
+      // Only show pending state if no matched game AND no stored match ID
+      if (!match && !storedMatchId) match = arr.find(s => !s.acceptedBy && s.uid === session.uid);
+      // Persist matched challenge ID — only cleared when Game Ended clicked
+      if (match && match.acceptedBy) localStorage.setItem("wz_my_match_"+session.uid, match.id);
+      const section = document.getElementById("match-room-section");
+      const card = document.getElementById("match-room-card");
+      // Hide only if no match AND no stored match ID
+      if (!match && !storedMatchId) { section.hidden = true; return; }
+      // If match not found but storedMatchId exists, show loading state briefly
+      if (!match && storedMatchId) { section.hidden = false; card.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-muted);">Loading match room…</div>`; return; }
+      // Already submitted result
+      const alreadySubmitted = results.find(r => r.challengeId === match.id && r.submitterUid === session.uid);
+      if (alreadySubmitted) {
+        section.hidden = false;
+        card.innerHTML = `<div style="text-align:center;padding:16px;">
+          <i class="ph-fill ph-check-circle" style="font-size:2rem;color:var(--success);"></i>
+          <p style="margin-top:8px;font-weight:600;">Result submitted. Awaiting admin review.</p>
+          <button class="btn btn-block" style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;margin-top:14px;" onclick="markGameEnded('${match.id}')">
+            <i class="ph-fill ph-flag-checkered"></i> Game Ended
+          </button>
+        </div>`;
+        return;
+      }
+      const isSetter = match.uid === session.uid;
+      const label = GAME_LABELS[match.gameType] || match.gameType;
+      const time = new Date(match.acceptedAt).toLocaleString("en-IN", {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+      const startedBadge = match.startedAt
+        ? `<div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:6px 12px;font-size:13px;color:#4ade80;"><i class="ph-fill ph-play-circle"></i> Game started at ${new Date(match.startedAt).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>`
+        : "";
+      const startBtn = match.startedAt ? "" : `<button class="btn btn-primary" style="padding:8px 16px;font-size:13px;background:linear-gradient(135deg,#16a34a,#15803d);" onclick="startGame('${match.id}')"><i class="ph-fill ph-play-circle"></i> Start Game</button>`;
+      const roomCodeHtml = isSetter
+        ? `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <input id="room-code-input" type="text" placeholder="Enter room code" value="${match.roomCode||''}" style="flex:1;min-width:120px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#0F0F16;color:#fff;font-size:14px;" />
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="shareRoomCode('${match.id}')"><i class="ph-fill ph-share-network"></i> Share</button>
+            ${startBtn}
+           </div>${startedBadge}`
+        : match.roomCode
+          ? `<div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;background:rgba(255,255,255,0.05);padding:10px 14px;border-radius:8px;">
+              <span style="font-size:1.2rem;font-weight:700;color:var(--accent);letter-spacing:2px;">${match.roomCode}</span>
+              <button class="btn btn-secondary" style="padding:5px 12px;font-size:12px;" onclick="navigator.clipboard.writeText('${match.roomCode}').then(()=>window.WinzoAuth.toast('Code copied!','success'))"><i class="ph ph-copy"></i> Copy</button>
+              ${startBtn}
+             </div>${startedBadge}`
+          : `<div style="margin-top:8px;color:var(--text-muted);font-size:13px;"><i class="ph ph-hourglass"></i> Waiting for room code from ${match.byName}...</div>`;
+
+      section.hidden = false;
+      card.innerHTML = `
+        <div style="margin-bottom:18px;">
+          <span class="eyebrow"><i class="ph-fill ph-sword" style="color:var(--accent);"></i> Match Room</span>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:16px;">
+            <div><div style="font-size:11px;color:var(--text-muted);">Set by</div><div style="font-weight:700;">${match.byName}</div></div>
+            <div><div style="font-size:11px;color:var(--text-muted);">vs</div><div style="font-weight:700;">${match.acceptedByName||"Opponent"}</div></div>
+            <div><div style="font-size:11px;color:var(--text-muted);">Game ID</div><div style="font-weight:700;color:var(--accent);letter-spacing:1px;">${match.gameId||match.id}</div></div>
+            <div><div style="font-size:11px;color:var(--text-muted);">Game</div><div style="font-weight:700;">${label}</div></div>
+            <div><div style="font-size:11px;color:var(--text-muted);">Amount</div><div style="font-weight:700;color:var(--accent);">₹${Number(match.value).toLocaleString("en-IN")}</div></div>
+            <div><div style="font-size:11px;color:var(--text-muted);">Matched at</div><div style="font-weight:700;">${time}</div></div>
+            ${match.startedAt ? `<div><div style="font-size:11px;color:var(--text-muted);">Started at</div><div style="font-weight:700;color:#4ade80;">${new Date(match.startedAt).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div></div>` : ""}
+          </div>
+        </div>
+        <div style="margin-bottom:18px;">
+          <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Room Code</div>
+          ${roomCodeHtml}
+        </div>
+        <hr style="border-color:rgba(255,255,255,0.08);margin:18px 0;" />
+        ${match.startedAt ? `
+          <div style="margin-bottom:14px;">
+            <div style="font-weight:700;margin-bottom:10px;">Update Game Status</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="game-result" value="won" onchange="document.getElementById('screenshot-section').style.display=''" /> <span class="badge badge-green">I Won</span></label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="game-result" value="lost" onchange="document.getElementById('screenshot-section').style.display='none'" /> <span class="badge badge-red">I Lost</span></label>
+            </div>
+          </div>
+          <div id="screenshot-section" style="margin-bottom:14px;">
+            <div style="font-weight:700;margin-bottom:8px;">Upload Screenshot</div>
+            <label class="file-drop" for="result-proof" style="padding:14px;">
+              <i class="ph ph-cloud-arrow-up"></i>
+              <p><strong>Click to upload</strong> your game screenshot</p>
+              <p class="hint">JPG / PNG · Max 5 MB</p>
+              <input id="result-proof" type="file" accept="image/*" />
+            </label>
+            <div id="result-proof-info" style="font-size:12px;color:var(--success);margin-top:4px;"></div>
+          </div><!-- /screenshot-section -->
+          <div style="margin-bottom:18px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+              <input type="checkbox" id="room-code-verified" />
+              I have verified the room code
+            </label>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="postResult('${match.id}')">
+            <i class="ph-fill ph-paper-plane-tilt"></i> Post Result
+          </button>` : ``}`;
+
+      if (match.startedAt) {
+        document.getElementById("result-proof").addEventListener("change", function() {
+          const f = this.files[0];
+          if (f) document.getElementById("result-proof-info").textContent = `✓ ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
+        });
+      }
+    }
+
+    window.markGameEnded = async function(matchId) {
+      localStorage.removeItem("wz_my_match_"+session.uid);
+      const arr = window.WinzoSets.get().filter(s => s.id !== matchId);
+      localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
+      if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"completed" }).eq("id", matchId); } catch(e) {}
+      _lastMatchHash = ""; _lastSetsHash = "";
+      document.getElementById("match-room-section").hidden = true;
+      window.WinzoSets.getAsync().then(a => _paintSets(a));
+    };
+
+    window.cancelPendingSet = async function(id) {
+      const arr = await window.WinzoSets.getAsync();
+      const s = arr.find(x => x.id === id);
+      if (!s) return;
+      if (s.acceptedBy) return window.WinzoAuth.toast("Cannot cancel a matched game. You must play.", "error", 4000);
+      if (s.uid !== session.uid) return;
+      if (window.WINZO_SB) try { await window.WINZO_SB.from("challenges").update({ status:"cancelled", cancelled_by:session.fullName, cancelled_at:new Date().toISOString() }).eq("id", id); } catch(e) {}
+      await window.WinzoSets.delete(id);
+      window.WinzoAuth.toast("Challenge cancelled.", "success");
+      renderSets(); renderMatchRoom();
+    };
+
+    window.shareRoomCode = async function(id) {
+      const code = document.getElementById("room-code-input").value.trim();
+      if (!code) return window.WinzoAuth.toast("Enter a room code first.", "error");
+      const arr = window.WinzoSets.get();
+      const s = arr.find(x => x.id === id);
+      if (!s) return;
+      s.roomCode = code;
+      localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
+      if (window.WINZO_SB) {
+        try { await window.WINZO_SB.from("challenges").update({ room_code: code }).eq("id", id); } catch(e) {}
+      }
+      _lastMatchHash = "";
+      window.WinzoAuth.toast("Room code shared!", "success");
+      renderMatchRoom();
+    };
+
+    window.startGame = async function(id) {
+      const arr = window.WinzoSets.get();
+      const s = arr.find(x => x.id === id);
+      if (!s) return;
+      const isSetter = s.uid === session.uid;
+      if (!s.startedAt) { s.startedAt = Date.now(); s.startedByName = session.fullName.split(" ")[0]; }
+      if (isSetter) { s.setterStartedAt = Date.now(); } else { s.acceptorStartedAt = Date.now(); }
+      localStorage.setItem("winzo_sets_global", JSON.stringify(arr));
+      localStorage.setItem("wz_started_"+id, String(s.startedAt));
+      if (window.WINZO_SB) {
+        const upd = { started_at: new Date(s.startedAt).toISOString(), started_by: session.fullName };
+        if (isSetter) upd.setter_started_at = new Date(s.setterStartedAt).toISOString();
+        else upd.acceptor_started_at = new Date(s.acceptorStartedAt).toISOString();
+        try { await window.WINZO_SB.from("challenges").update(upd).eq("id", id); } catch(e) {}
+      }
+      const users = window.WinzoAuth.getUsers();
+      const setter = users.find(u => u.uid === s.uid);
+      const acceptor = users.find(u => u.uid === s.acceptedBy);
+      const ev = {
+        id: "gs_" + Date.now(),
+        challengeId: s.id,
+        gameId: s.gameId || s.id,
+        gameType: GAME_LABELS[s.gameType] || s.gameType,
+        amount: s.value,
+        roomCode: s.roomCode || "—",
+        setterName: s.byName,
+        setterPhone: (setter && setter.phone) || "—",
+        acceptorName: s.acceptedByName,
+        acceptorPhone: (acceptor && acceptor.phone) || "—",
+        matchedAt: s.acceptedAt ? new Date(s.acceptedAt).toLocaleString("en-IN") : "—",
+        startedAt: new Date(s.startedAt).toLocaleString("en-IN"),
+        startedBy: session.fullName
+      };
+      const evs = JSON.parse(localStorage.getItem("winzo_game_started") || "[]");
+      evs.unshift(ev);
+      localStorage.setItem("winzo_game_started", JSON.stringify(evs));
+      if (window.WINZO_SB) {
+        try {
+          await window.WINZO_SB.from("results").upsert({
+            id: ev.id, challenge_id: s.id, game_id: s.gameId || s.id,
+            submitter_uid: session.uid, submitter_name: session.fullName, submitter_phone: session.phone || "—",
+            opponent_uid: s.uid === session.uid ? s.acceptedBy : s.uid,
+            opponent_name: s.uid === session.uid ? s.acceptedByName : s.byName,
+            opponent_phone: (s.uid === session.uid ? (acceptor && acceptor.phone) : (setter && setter.phone)) || "—",
+            game_type: GAME_LABELS[s.gameType] || s.gameType,
+            amount: s.value, room_code: s.roomCode || "—",
+            result: "started", status: "started"
+          });
+        } catch(e) {}
+      }
+      _lastMatchHash = "";
+      window.WinzoAuth.toast("Game started! Admin has been notified.", "success", 4000);
+      renderMatchRoom();
+    };
+
+    window.postResult = async function(id) {
+      const resultVal = document.querySelector("input[name='game-result']:checked")?.value;
+      if (!resultVal) return window.WinzoAuth.toast("Select a game status.", "error");
+      const verified = document.getElementById("room-code-verified").checked;
+      if (!verified) return window.WinzoAuth.toast("Please verify the room code first.", "error");
+
+      const arr = await window.WinzoSets.getAsync();
+      const match = arr.find(x => x.id === id);
+      if (!match) return;
+
+      const f = document.getElementById("result-proof").files[0];
+      if (!f && resultVal !== "lost") return window.WinzoAuth.toast("Screenshot required.", "error");
+      if (f && f.size > 5*1024*1024) return window.WinzoAuth.toast("File must be under 5 MB.", "error");
+      let proofUrl = null, proofKey = null;
+      if (f) {
+      const cf = await compressImage(f, 1280, 0.80);
+      try {
+        const sbSession = JSON.parse(localStorage.getItem("winzo_sb_session") || "null");
+        const token = sbSession?.access_token || (window.WINZO_ENV && window.WINZO_ENV.SUPABASE_ANON);
+        const { url, key } = await window.wzUploadToStorj(cf, "screenshots/" + session.uid, token);
+        proofUrl = url; proofKey = key;
+      } catch(e) {
+        proofUrl = await new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(cf); });
+      }
+      }
+
+      const isSetter = match.uid === session.uid;
+      const opponentUid = isSetter ? match.acceptedBy : match.uid;
+      const opponentName = isSetter ? match.acceptedByName : match.byName;
+      const users = window.WinzoAuth.getUsers();
+      let opponent = users.find(u => u.uid === opponentUid);
+      if (!opponent && window.WINZO_SB && opponentUid) {
+        try { const { data: od } = await window.WINZO_SB.from("users").select("phone").eq("uid", opponentUid).maybeSingle(); if (od) opponent = od; } catch(e) {}
+      }
+
+      const results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
+      results.unshift({
+        id: "res_" + Date.now(),
+        challengeId: id,
+        gameId: match.gameId || match.id,
+        submitterUid: session.uid,
+        submitterName: session.fullName,
+        submitterPhone: session.phone || "—",
+        opponentUid,
+        opponentName,
+        opponentPhone: (opponent && opponent.phone) || "—",
+        gameType: GAME_LABELS[match.gameType] || match.gameType,
+        amount: match.value,
+        roomCode: match.roomCode || "—",
+        result: resultVal,
+        proofUrl,
+        proofKey: proofKey || null,
+        screenshotAt: new Date().toLocaleString("en-IN"),
+        matchedAt: match.acceptedAt || null,
+        status: "pending",
+        at: new Date().toLocaleString("en-IN")
+      });
+      localStorage.setItem("winzo_results", JSON.stringify(results));
+      if (window.WinzoResults) window.WinzoResults.saveOne(results[0]);
+      window.WinzoAuth.toast("Result submitted! Admin will review.", "success", 4000);
+      renderMatchRoom(); renderSets();
+    };
+    document.getElementById("open-report").addEventListener("click", () => document.getElementById("report-modal").hidden = false);
+    document.getElementById("close-report").addEventListener("click", () => document.getElementById("report-modal").hidden = true);
+    document.getElementById("report-modal").querySelector(".modal-backdrop").addEventListener("click", () => document.getElementById("report-modal").hidden = true);
+
+    window.submitWithdraw = function() {
+      const amount = Number(document.getElementById("wd-amount").value);
+      const method = document.getElementById("wd-method").value;
+      const upiId  = document.getElementById("wd-upi").value.trim();
+      if (!amount || amount < 1) return window.WinzoAuth.toast("Enter a valid amount.", "error");
+      if (!upiId) return window.WinzoAuth.toast("Enter your UPI ID or account number.", "error");
+      const users = window.WinzoAuth.getUsers();
+      const fresh = users.find(u => u.uid === session.uid);
+      const chips = Number(fresh && (fresh.chips ?? fresh.wallet) || 0);
+      if (amount > chips) return window.WinzoAuth.toast(`Insufficient chips. Balance: ₹${chips.toLocaleString("en-IN")}`, "error", 4000);
+      const w = { id:"wd_"+Date.now(), uid:session.uid, user:session.fullName, userPhone:session.phone||"—", userEmail:session.email||"—", amount, method, upiId, status:"pending", time:new Date().toISOString() };
+      // Deduct chips immediately
+      const idx = users.findIndex(u => u.uid === session.uid);
+      if (idx >= 0) {
+        users[idx].chips = chips - amount;
+        users[idx].wallet = users[idx].chips;
+        window.WinzoAuth.saveUsers(users);
+        if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: users[idx].chips }).eq("uid", session.uid).then(function(){});
+      }
+      const wds = window.WinzoWithdraws.get();
+      wds.unshift(w);
+      window.WinzoWithdraws.save(wds);
+      window.WinzoWithdraws.saveOne(w);
+      document.getElementById("withdraw-modal").setAttribute("hidden","");
+      document.getElementById("wd-amount").value = "";
+      document.getElementById("wd-upi").value = "";
+      window.WinzoAuth.toast("Withdrawal request submitted! Admin will process within 24h.", "success", 4000);
+    };
+
+    document.getElementById("rProof").addEventListener("change", function() {
+      const f = this.files[0];
+      if (f) document.getElementById("rProofInfo").textContent = `✓ ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
+    });
+    document.getElementById("report-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const f = document.getElementById("rProof").files[0];
+      if (!f) return window.WinzoAuth.toast("Win-proof screenshot required.", "error");
+      if (f.size > 5*1024*1024) return window.WinzoAuth.toast("File must be under 5 MB.", "error");
+      const cf = await compressImage(f, 1280, 0.80);
+      let proofUrl, proofKey = null;
+      try {
+        const sbSession = JSON.parse(localStorage.getItem("winzo_sb_session") || "null");
+        const token = sbSession?.access_token || (window.WINZO_ENV && window.WINZO_ENV.SUPABASE_ANON);
+        const { url, key } = await window.wzUploadToStorj(cf, "reports/" + session.uid, token);
+        proofUrl = url; proofKey = key;
+      } catch(e) {
+        proofUrl = await new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(cf); });
+      }
+      const reports = window.WinzoReports.get();
+      const rep = { id:"r_"+Date.now(), reporterUid:session.uid, reporterName:session.fullName, opponent:document.getElementById("rOpponent").value.trim(), details:document.getElementById("rDetails").value.trim(), proofUrl, proofKey: proofKey||null, screenshotAt:new Date().toLocaleString("en-IN"), status:"pending", at:Date.now() };
+      reports.push(rep);
+      window.WinzoReports.save(reports);
+      window.WinzoReports.saveOne(rep);
+      document.getElementById("report-modal").hidden = true;
+      e.target.reset();
+      document.getElementById("rProofInfo").textContent = "";
+      window.WinzoAuth.toast("Report submitted. Admin will review & reward you.", "success");
+    });
+  </script>
+  <script>
+    const hb = document.getElementById('nav-hamburger');
+    const nl = document.getElementById('nav-links');
+    hb.addEventListener('click', () => { hb.classList.toggle('open'); nl.classList.toggle('open'); });
+    nl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { hb.classList.remove('open'); nl.classList.remove('open'); }));
+  </script>
+</body>
+</html>

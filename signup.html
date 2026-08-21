@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create Account — WinzoIndia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="auth-shell" data-testid="signup-page">
+    <aside class="auth-visual">
+      <div class="auth-visual-content">
+        <span class="eyebrow">Join The Arena</span>
+        <h2>Sign up. Verify. Play in 90 seconds.</h2>
+        <p>Complete a quick KYC to unlock cash tournaments, welcome bonus of ₹500 and lightning-fast withdrawals.</p>
+      </div>
+    </aside>
+
+    <section class="auth-form-wrap">
+      <a href="index.html" class="brand" style="margin-bottom:24px;">
+        <div class="brand-mark">W</div>
+        <div class="brand-name">Winzo<span>India</span></div>
+      </a>
+
+      <div class="auth-header">
+        <h1>Create your account</h1>
+        <p>Fill in your details and upload one valid ID for KYC verification.</p>
+      </div>
+
+      <div id="signup-error" class="form-error" data-testid="signup-error"></div>
+
+      <form id="signup-form" class="form" data-testid="signup-form" novalidate>
+        <div class="field">
+          <label for="fullName">Full Name</label>
+          <input id="fullName" name="fullName" type="text" placeholder="Arjun Sharma" required data-testid="signup-fullname-input" />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="phone">Phone Number</label>
+            <input id="phone" name="phone" type="tel" placeholder="+91 98xxxxxxxx" required pattern="^[+0-9\s\-]{8,15}$" data-testid="signup-phone-input" />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" placeholder="arjun@example.com" required data-testid="signup-email-input" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="At least 6 characters" required minlength="6" data-testid="signup-password-input" />
+        </div>
+
+        <!-- Aadhaar -->
+        <div class="field">
+          <label for="aadhaarNumber">Aadhaar Number</label>
+          <input id="aadhaarNumber" name="aadhaarNumber" type="text" inputmode="numeric" maxlength="12" placeholder="12-digit Aadhaar number" required pattern="\d{12}" data-testid="signup-aadhaar-number" />
+        </div>
+        <div class="field">
+          <label>Aadhaar Front</label>
+          <label class="file-drop" for="kycFile" id="kyc-drop" data-testid="signup-kyc-upload">
+            <i class="ph ph-identification-card"></i>
+            <p><strong>Click to upload Aadhaar front</strong> or drag &amp; drop</p>
+            <p class="hint">JPG, PNG or PDF · Max 5 MB</p>
+            <input id="kycFile" name="kycFile" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
+          </label>
+          <div id="kyc-file-info" class="file-info" data-testid="kyc-file-info"></div>
+        </div>
+        <div class="field">
+          <label>Aadhaar Back</label>
+          <label class="file-drop" for="kycBackFile" id="kyc-back-drop">
+            <i class="ph ph-identification-card-reverse"></i>
+            <p><strong>Click to upload Aadhaar back</strong> or drag &amp; drop</p>
+            <p class="hint">JPG, PNG or PDF · Max 5 MB</p>
+            <input id="kycBackFile" name="kycBackFile" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
+          </label>
+          <div id="kyc-back-file-info" class="file-info"></div>
+        </div>
+
+        <!-- PAN -->
+        <div class="field">
+          <label for="panNumber">PAN Card Number</label>
+          <input id="panNumber" name="panNumber" type="text" maxlength="10" placeholder="e.g. ABCDE1234F" required pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}" style="text-transform:uppercase;" data-testid="signup-pan-number" />
+        </div>
+        <div class="field">
+          <label>PAN Card Image</label>
+          <label class="file-drop" for="panFile" id="pan-drop">
+            <i class="ph ph-identification-badge"></i>
+            <p><strong>Click to upload PAN card</strong> or drag &amp; drop</p>
+            <p class="hint">JPG, PNG or PDF · Max 5 MB</p>
+            <input id="panFile" name="panFile" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
+          </label>
+          <div id="pan-file-info" class="file-info"></div>
+        </div>
+        <input type="hidden" id="kycType" name="kycType" value="aadhaar" />
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" data-testid="signup-submit-btn">
+          <i class="ph-fill ph-rocket-launch"></i> Create Account
+        </button>
+
+        <p class="auth-footer">
+          Already have an account? <a href="login.html" data-testid="link-to-login">Sign in</a>
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    window.WinzoAuth.redirectIfAuthed();
+
+    const form = document.getElementById("signup-form");
+    const errBox = document.getElementById("signup-error");
+    const drop = document.getElementById("kyc-drop");
+    const fileInput = document.getElementById("kycFile");
+    const fileInfo = document.getElementById("kyc-file-info");
+    const backDrop = document.getElementById("kyc-back-drop");
+    const backInput = document.getElementById("kycBackFile");
+    const backInfo = document.getElementById("kyc-back-file-info");
+    const panDrop = document.getElementById("pan-drop");
+    const panInput = document.getElementById("panFile");
+    const panInfo = document.getElementById("pan-file-info");
+
+    function setupDrop(dropEl, inputEl, infoEl) {
+      ["dragenter","dragover"].forEach(ev =>
+        dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.add("dragover"); })
+      );
+      ["dragleave","drop"].forEach(ev =>
+        dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.remove("dragover"); })
+      );
+      dropEl.addEventListener("drop", e => {
+        if (e.dataTransfer.files[0]) { inputEl.files = e.dataTransfer.files; showFile(e.dataTransfer.files[0], infoEl); }
+      });
+      inputEl.addEventListener("change", () => { if (inputEl.files[0]) showFile(inputEl.files[0], infoEl); });
+    }
+    function showFile(f, infoEl) {
+      infoEl.textContent = `✓ ${f.name} (${(f.size/(1024*1024)).toFixed(2)} MB) ready to upload`;
+    }
+    setupDrop(drop, fileInput, fileInfo);
+    setupDrop(backDrop, backInput, backInfo);
+    setupDrop(panDrop, panInput, panInfo);
+
+    document.getElementById("panNumber").addEventListener("input", function() {
+      this.value = this.value.toUpperCase();
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errBox.style.display = "none";
+      const file = fileInput.files[0];
+      const backFile = backInput.files[0];
+      const panFile = panInput.files[0];
+      const aadhaarNumber = document.getElementById("aadhaarNumber").value.trim();
+      const panNumber = document.getElementById("panNumber").value.trim().toUpperCase();
+
+      if (!/^\d{12}$/.test(aadhaarNumber)) { errBox.textContent = "Enter a valid 12-digit Aadhaar number."; errBox.style.display = "block"; return; }
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNumber)) { errBox.textContent = "Enter a valid PAN number (e.g. ABCDE1234F)."; errBox.style.display = "block"; return; }
+      if (!file) { errBox.textContent = "Please upload Aadhaar front."; errBox.style.display = "block"; return; }
+      if (!backFile) { errBox.textContent = "Please upload Aadhaar back."; errBox.style.display = "block"; return; }
+      if (!panFile) { errBox.textContent = "Please upload PAN card image."; errBox.style.display = "block"; return; }
+      if (file.size > 5*1024*1024 || backFile.size > 5*1024*1024 || panFile.size > 5*1024*1024) {
+        errBox.textContent = "Each file must be under 5 MB."; errBox.style.display = "block"; return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ph ph-spinner"></i> Creating account…';
+      try {
+        await window.WinzoAuth.signup({
+          fullName: form.fullName.value.trim(),
+          phone: form.phone.value.trim(),
+          email: form.email.value.trim(),
+          password: form.password.value,
+          kycType: "aadhaar",
+          aadhaarNumber,
+          panNumber,
+          kycFile: file,
+          kycBackFile: backFile,
+          panFile
+        });
+        window.WinzoAuth.toast("Account created! Welcome ₹500 bonus added.", "success");
+        setTimeout(() => window.location.href = "dashboard.html", 2000);
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = "block";
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph-fill ph-rocket-launch"></i> Create Account';
+      }
+    });
+  </script>
+</body>
+</html>

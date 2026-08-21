@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile — WinzoIndia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-testid="profile-page">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand"><div class="brand-mark">W</div><div class="brand-name">Winzo<span>India</span></div></a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="dashboard.html">Lobby</a></li>
+        <li><a href="ludo.html">Ludo</a></li>
+        <li><a href="snake-ladder.html">Snake &amp; Ladder</a></li>
+        <li><a href="profile.html" class="active">Profile</a></li>
+      </ul>
+      <a href="https://wa.me/919812543183" target="_blank" rel="noopener" class="wz-helpline" title="WhatsApp Helpline"><i class="ph-fill ph-whatsapp-logo"></i><span> +91-9812543183</span></a>
+      <div class="nav-actions">
+        <a href="dashboard.html" class="btn btn-secondary"><i class="ph ph-house"></i> Dashboard</a>
+        <a href="#" id="logout-btn" class="btn btn-primary" data-testid="profile-logout-btn">Logout</a>
+      </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <main class="profile-shell">
+    <div class="card profile-header" data-testid="profile-header">
+      <div class="avatar" style="background-image:url('https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg')"></div>
+      <div class="profile-meta">
+        <h1 data-testid="profile-name">—</h1>
+        <span data-testid="profile-email">—</span>
+        <div>
+          <span id="kyc-badge" class="kyc-badge" data-testid="profile-kyc-badge">
+            <i class="ph-fill ph-check-circle"></i> KYC Verified
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Nav -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+      <button id="tab-account" onclick="switchTab('account')" class="btn btn-primary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-user"></i> Account</button>
+      <button id="tab-transactions" onclick="switchTab('transactions')" class="btn btn-secondary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-clock-counter-clockwise"></i> Transactions</button>
+      <button id="tab-games" onclick="switchTab('games')" class="btn btn-secondary" style="font-size:13px;padding:8px 18px;"><i class="ph ph-game-controller"></i> Game History</button>
+    </div>
+
+    <!-- Games Tab -->
+    <div id="section-games" style="display:none;">
+      <div class="card">
+        <div class="section-title" style="margin-bottom:16px;"><h2 style="font-size:1.2rem;">Game History</h2></div>
+        <div id="games-list"><p style="color:var(--text-secondary);font-size:14px;">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Transactions Tab -->
+    <div id="section-transactions" style="display:none;">
+      <div class="card">
+        <div class="section-title" style="margin-bottom:16px;"><h2 style="font-size:1.2rem;">Transaction History</h2></div>
+        <div id="txn-list"><p style="color:var(--text-secondary);font-size:14px;">Loading…</p></div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="section-title" style="margin-bottom:16px;"><h2 style="font-size:1.2rem;">Chip History</h2></div>
+        <div id="chip-ledger-list"><p style="color:var(--text-secondary);font-size:14px;">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Account Tab -->
+    <div id="section-account">
+    <div class="card" style="margin-bottom:24px;">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;">Account Details</h2>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><span>Full Name</span><strong data-testid="info-fullname">—</strong></div>
+        <div class="info-item"><span>Phone</span><strong data-testid="info-phone">—</strong></div>
+        <div class="info-item"><span>Email</span><strong data-testid="info-email">—</strong></div>
+        <div class="info-item"><span>KYC Document</span><strong data-testid="info-kyc-type">—</strong></div>
+
+        <div class="info-item"><span>Member Since</span><strong data-testid="info-since">—</strong></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;">Change Password</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:400px;">
+        <input id="cp-current" type="password" placeholder="Current password" class="field-input" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);font-size:14px;" />
+        <input id="cp-new" type="password" placeholder="New password" class="field-input" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);font-size:14px;" />
+        <input id="cp-confirm" type="password" placeholder="Confirm new password" class="field-input" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);font-size:14px;" />
+        <button id="cp-btn" class="btn btn-primary" style="align-self:flex-start;" onclick="handleChangePassword()">
+          <i class="ph ph-lock-key"></i> Update Password
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-bottom:16px;">
+        <h2 style="font-size:1.2rem;">KYC Document</h2>
+      </div>
+      <p style="color:var(--text-secondary);font-size:14px;margin-bottom:12px;">
+        Your uploaded document is stored securely. Only compliance officers can view it.
+      </p>
+      <div id="kyc-docs-btns" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+
+      <!-- Shown only when KYC is rejected -->
+      <div id="kyc-rejected-section" style="display:none;margin-top:16px;">
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;margin-bottom:16px;">
+          <p style="color:#ef4444;font-weight:600;margin:0 0 4px;"><i class="ph-fill ph-x-circle"></i> KYC Rejected</p>
+          <p style="color:var(--text-secondary);font-size:13px;margin:0;">Your documents were rejected. Please re-upload valid documents.</p>
+        </div>
+        <form id="rekyc-form">
+          <div class="field" style="margin-bottom:12px;">
+            <label for="rekyc-type">Document Type</label>
+            <select id="rekyc-type" required style="width:100%;">
+              <option value="">Choose a document…</option>
+              <option value="aadhaar">Aadhaar Card</option>
+              <option value="pan">PAN Card</option>
+              <option value="dl">Driving Licence</option>
+              <option value="passport">Passport</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:12px;">
+            <label>Front Side</label>
+            <label class="file-drop" for="rekyc-front" style="cursor:pointer;display:block;border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;">
+              <i class="ph ph-upload-simple" style="font-size:24px;"></i>
+              <p style="margin:4px 0 0;font-size:13px;"><strong>Click to upload front</strong></p>
+              <input id="rekyc-front" type="file" accept=".jpg,.jpeg,.png,.pdf" required style="display:none;" />
+            </label>
+            <div id="rekyc-front-info" style="font-size:12px;color:var(--success);margin-top:4px;"></div>
+          </div>
+          <div class="field" id="rekyc-back-field" style="display:none;margin-bottom:12px;">
+            <label>Back Side</label>
+            <label class="file-drop" for="rekyc-back" style="cursor:pointer;display:block;border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;">
+              <i class="ph ph-upload-simple" style="font-size:24px;"></i>
+              <p style="margin:4px 0 0;font-size:13px;"><strong>Click to upload back</strong></p>
+              <input id="rekyc-back" type="file" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" />
+            </label>
+            <div id="rekyc-back-info" style="font-size:12px;color:var(--success);margin-top:4px;"></div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">
+            <i class="ph ph-paper-plane-tilt"></i> Re-submit Documents
+          </button>
+        </form>
+      </div>
+    </div>
+    </div><!-- /section-account -->
+  </main>
+
+  <footer class="footer"><div class="container"><p><strong>WinzoIndia</strong> · Play responsibly.</p></div></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const session = window.WinzoAuth.session();
+    if (!session) { window.location.href = "login.html"; }
+    if (session) {
+      const kycLabels = { aadhaar: "Aadhaar Card", pan: "PAN Card", dl: "Driving Licence", passport: "Passport" };
+
+      function renderProfile(u) {
+        document.querySelector("[data-testid='profile-name']").textContent = u.fullName;
+        document.querySelector("[data-testid='profile-email']").textContent = u.email;
+        document.querySelector("[data-testid='info-fullname']").textContent = u.fullName;
+        document.querySelector("[data-testid='info-phone']").textContent = u.phone;
+        document.querySelector("[data-testid='info-email']").textContent = u.email;
+        document.querySelector("[data-testid='info-kyc-type']").textContent = kycLabels[u.kycType] || "—";
+        document.querySelector("[data-testid='info-since']").textContent = new Date(u.createdAt).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" });
+        const badge = document.getElementById("kyc-badge");
+        badge.className = "kyc-badge";
+        if (u.kycVerified) {
+          badge.innerHTML = '<i class="ph-fill ph-check-circle"></i> KYC Verified';
+        } else if (u.kycRejected) {
+          badge.classList.add("rejected");
+          badge.innerHTML = '<i class="ph-fill ph-x-circle"></i> KYC Rejected';
+          document.getElementById("kyc-rejected-section").style.display = "block";
+          document.getElementById("kyc-docs-btns").style.display = "none";
+        } else {
+          badge.classList.add("pending");
+          badge.innerHTML = '<i class="ph-fill ph-clock"></i> KYC Pending';
+        }
+        const kycView = document.getElementById("kyc-docs-btns");
+        function docBtn(url, label, icon) {
+          if (!url) return "";
+          return `<a href="${url}" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size:13px;padding:7px 14px;"><i class="ph ${icon}"></i> ${label}</a>`;
+        }
+        kycView.innerHTML = docBtn(u.kycUrl, "Aadhaar Front", "ph-identification-card")
+          + docBtn(u.kycBackUrl, "Aadhaar Back", "ph-identification-card-reverse")
+          + docBtn(u.panUrl, "PAN Card", "ph-identification-badge");
+        if (!u.kycUrl && !u.kycBackUrl && !u.panUrl) kycView.innerHTML = `<span style="font-size:13px;color:var(--text-muted);">No documents on file.</span>`;
+      }
+
+      // Render from cache first, then fetch fresh from Supabase
+      renderProfile(session);
+      if (window.WINZO_SB) {
+        window.WINZO_SB.from("users").select("*").eq("uid", session.uid).maybeSingle().then(({ data }) => {
+          if (data) renderProfile({ fullName:data.full_name, email:data.email, phone:data.phone, kycType:data.kyc_type, kycUrl:data.kyc_url, kycBackUrl:data.kyc_back_url, panUrl:data.pan_url, kycVerified:data.kyc_verified, kycRejected:data.kyc_rejected, createdAt:data.created_at });
+        });
+      }
+
+      // Re-upload form logic
+      const NEEDS_BACK = ["aadhaar", "dl"];
+      document.getElementById("rekyc-type").addEventListener("change", function() {
+        document.getElementById("rekyc-back-field").style.display = NEEDS_BACK.includes(this.value) ? "block" : "none";
+      });
+      document.getElementById("rekyc-front").addEventListener("change", function() {
+        document.getElementById("rekyc-front-info").textContent = this.files[0] ? "✓ " + this.files[0].name : "";
+      });
+      document.getElementById("rekyc-back").addEventListener("change", function() {
+        document.getElementById("rekyc-back-info").textContent = this.files[0] ? "✓ " + this.files[0].name : "";
+      });
+
+      document.getElementById("rekyc-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const kycType = document.getElementById("rekyc-type").value;
+        const frontFile = document.getElementById("rekyc-front").files[0];
+        const backFile  = document.getElementById("rekyc-back").files[0];
+        if (!kycType) return window.WinzoAuth.toast("Select a document type.", "error");
+        if (!frontFile) return window.WinzoAuth.toast("Upload the front side.", "error");
+        if (NEEDS_BACK.includes(kycType) && !backFile) return window.WinzoAuth.toast("Upload the back side.", "error");
+
+        const btn = this.querySelector("button[type=submit]");
+        btn.disabled = true; btn.textContent = "Uploading…";
+
+        async function compress(file) {
+          if (!file || file.type === "application/pdf") return file;
+          return new Promise(function(resolve) {
+            const img = new Image(), url = URL.createObjectURL(file);
+            img.onload = function() {
+              URL.revokeObjectURL(url);
+              const scale = Math.min(1, 1600 / img.width);
+              const c = document.createElement("canvas");
+              c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+              c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+              c.toBlob(function(b) { resolve(b ? new File([b], file.name, {type:"image/jpeg"}) : file); }, "image/jpeg", 0.82);
+            };
+            img.onerror = function() { resolve(file); };
+            img.src = url;
+          });
+        }
+
+        try {
+          let kycUrl = null, kycBackUrl = null, kycKey = null, kycBackKey = null;
+          const cFront = await compress(frontFile);
+          const cBack  = backFile ? await compress(backFile) : null;
+
+          if (window.WINZO_SB) {
+            const { data: { session: sbSession } } = await window.WINZO_SB.auth.getSession();
+            const token = sbSession?.access_token;
+            const frontResult = await window.wzUploadToStorj(cFront, "kyc/" + session.uid, token);
+            kycUrl = frontResult.url; kycKey = frontResult.key;
+
+            if (cBack) {
+              const backResult = await window.wzUploadToStorj(cBack, "kyc/" + session.uid, token);
+              kycBackUrl = backResult.url; kycBackKey = backResult.key;
+            }
+
+            await window.WINZO_SB.from("users").update({
+              kyc_type: kycType, kyc_key: kycKey, kyc_back_key: kycBackKey,
+              kyc_verified: false, kyc_rejected: false
+            }).eq("uid", session.uid);
+          }
+
+          // Update localStorage
+          const users = window.WinzoAuth.getUsers ? window.WinzoAuth.getUsers() : JSON.parse(localStorage.getItem("winzo_users") || "[]");
+          const u = users.find(x => x.uid === session.uid);
+          if (u) { u.kycType = kycType; u.kycKey = kycKey; u.kycBackKey = kycBackKey; u.kycVerified = false; u.kycRejected = false; }
+          localStorage.setItem("winzo_users", JSON.stringify(users));
+          session.kycRejected = false; session.kycVerified = false; session.kycType = kycType;
+          localStorage.setItem("winzo_session", JSON.stringify(session));
+
+          window.WinzoAuth.toast("Documents submitted! Awaiting review.", "success");
+          document.getElementById("kyc-rejected-section").style.display = "none";
+          document.getElementById("kyc-docs-btns").style.display = "";
+          const badge = document.getElementById("kyc-badge");
+          badge.className = "kyc-badge pending";
+          badge.innerHTML = '<i class="ph-fill ph-clock"></i> KYC Pending';
+        } catch(err) {
+          window.WinzoAuth.toast(err.message || "Upload failed.", "error");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Re-submit Documents';
+        }
+      });
+    }
+
+    function switchTab(tab) {
+      ['account','transactions','games'].forEach(t => {
+        document.getElementById('section-' + t).style.display = t === tab ? '' : 'none';
+        document.getElementById('tab-' + t).className = 'btn ' + (t === tab ? 'btn-primary' : 'btn-secondary');
+      });
+      if (tab === 'transactions') loadTransactions();
+      if (tab === 'games') loadGames();
+    }
+
+    let txnLoaded = false;
+    async function loadTransactions() {
+      if (txnLoaded) return;
+      txnLoaded = true;
+      const el = document.getElementById('txn-list');
+      const chipEl = document.getElementById('chip-ledger-list');
+      if (!window.WINZO_SB || !session) {
+        el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>';
+        chipEl.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>';
+        return;
+      }
+      const uid = session.uid;
+      const [{ data: deps }, { data: wds }, { data: ledger }] = await Promise.all([
+        window.WINZO_SB.from('deposits').select('id,amount,status,created_at').eq('uid', uid).order('created_at', { ascending: false }),
+        window.WINZO_SB.from('withdraws').select('id,amount,status,created_at').eq('uid', uid).order('created_at', { ascending: false }),
+        window.WINZO_SB.from('chip_ledger').select('type,amount,direction,note,created_at').eq('uid', uid).order('created_at', { ascending: false })
+      ]);
+      const rows = [
+        ...(deps || []).map(d => ({ ...d, type: 'Deposit' })),
+        ...(wds  || []).map(w => ({ ...w, type: 'Withdraw' }))
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      if (!rows.length) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No transactions yet.</p>'; }
+      else {
+        const statusColor = { approved: '#22c55e', pending: '#f59e0b', rejected: '#ef4444' };
+        el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr style="color:var(--text-secondary);text-align:left;">
+            <th style="padding:8px 6px;">Type</th><th style="padding:8px 6px;">Amount</th><th style="padding:8px 6px;">Status</th><th style="padding:8px 6px;">Date</th>
+          </tr></thead><tbody>` +
+          rows.map(r => `<tr style="border-top:1px solid var(--border-subtle);">
+            <td style="padding:8px 6px;">${r.type}</td>
+            <td style="padding:8px 6px;">₹${r.amount}</td>
+            <td style="padding:8px 6px;color:${statusColor[r.status] || 'inherit'};font-weight:600;">${r.status}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`).join('') + '</tbody></table>';
+      }
+      // Chip ledger
+      if (!ledger || !ledger.length) { chipEl.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No chip history yet.</p>'; return; }
+      const typeLabel = { deposit:'Deposit', withdraw:'Withdraw', game_win:'Game Win', game_loss:'Game Loss', game_entry:'Game Entry', refund:'Refund', bonus:'Bonus', admin:'Admin' };
+      chipEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="color:var(--text-secondary);text-align:left;">
+          <th style="padding:8px 6px;">Type</th><th style="padding:8px 6px;">Amount</th><th style="padding:8px 6px;">Note</th><th style="padding:8px 6px;">Date</th>
+        </tr></thead><tbody>` +
+        ledger.map(r => {
+          const isCredit = r.direction === 'credit';
+          return `<tr style="border-top:1px solid var(--border-subtle);">
+            <td style="padding:8px 6px;">${typeLabel[r.type] || r.type}</td>
+            <td style="padding:8px 6px;font-weight:700;color:${isCredit ? '#22c55e' : '#ef4444'};">${isCredit ? '+' : '-'}₹${r.amount}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);font-size:12px;">${r.note || '—'}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`;
+        }).join('') + '</tbody></table>';
+    }
+
+    let gamesLoaded = false;
+    async function loadGames() {
+      if (gamesLoaded) return;
+      gamesLoaded = true;
+      const el = document.getElementById('games-list');
+      if (!window.WINZO_SB || !session) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>'; return; }
+      const uid = session.uid;
+      const { data } = await window.WINZO_SB.from('results')
+        .select('id,game_type,amount,result,status,submitter_uid,opponent_name,submitter_name,created_at')
+        .or(`submitter_uid.eq.${uid},opponent_uid.eq.${uid}`)
+        .order('created_at', { ascending: false });
+      if (!data || !data.length) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No games played yet.</p>'; return; }
+      el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="color:var(--text-secondary);text-align:left;">
+          <th style="padding:8px 6px;">Game</th><th style="padding:8px 6px;">Status</th><th style="padding:8px 6px;">Played With</th><th style="padding:8px 6px;">Tokens</th><th style="padding:8px 6px;">Result</th><th style="padding:8px 6px;">Date</th>
+        </tr></thead><tbody>` +
+        data.map(r => {
+          const isSetter = r.submitter_uid === uid;
+          const opponent = isSetter ? (r.opponent_name || '—') : (r.submitter_name || '—');
+          const rawResult = (r.result || '').toLowerCase();
+          let myResult = rawResult;
+          if (!isSetter) { if (rawResult === 'won') myResult = 'lost'; else if (rawResult === 'lost') myResult = 'won'; }
+          const cancelled = myResult === 'cancelled' || (r.status || '').toLowerCase() === 'cancelled';
+          const matchStatus = cancelled ? '<span style="color:#f59e0b;font-weight:600;">Cancelled</span>' : '<span style="color:#22c55e;font-weight:600;">Played</span>';
+          const resultColor = { won: '#22c55e', lost: '#ef4444' };
+          const resultLabel = cancelled ? '—' : `<span style="color:${resultColor[myResult]||'inherit'};font-weight:600;text-transform:capitalize;">${myResult || '—'}</span>`;
+          return `<tr style="border-top:1px solid var(--border-subtle);">
+            <td style="padding:8px 6px;text-transform:capitalize;">${r.game_type || '—'}</td>
+            <td style="padding:8px 6px;">${matchStatus}</td>
+            <td style="padding:8px 6px;">${cancelled ? '—' : opponent}</td>
+            <td style="padding:8px 6px;">₹${r.amount}</td>
+            <td style="padding:8px 6px;">${resultLabel}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`;
+        }).join('') + '</tbody></table>';
+    }
+
+    async function handleChangePassword() {
+      const current = document.getElementById("cp-current").value;
+      const newPw   = document.getElementById("cp-new").value;
+      const confirm = document.getElementById("cp-confirm").value;
+      if (!current || !newPw || !confirm) return window.WinzoAuth.toast("Fill all password fields.", "error");
+      if (newPw.length < 6) return window.WinzoAuth.toast("New password must be at least 6 characters.", "error");
+      if (newPw !== confirm) return window.WinzoAuth.toast("Passwords do not match.", "error");
+
+      const btn = document.getElementById("cp-btn");
+      btn.disabled = true; btn.textContent = "Updating…";
+
+      try {
+        // Supabase Auth path
+        if (window.WINZO_SB) {
+          // Re-authenticate by signing in first to verify current password
+          const { error: signInErr } = await window.WINZO_SB.auth.signInWithPassword({ email: session.email, password: current });
+          if (signInErr) throw new Error("Current password is incorrect.");
+          const { error } = await window.WINZO_SB.auth.updateUser({ password: newPw });
+          if (error) throw new Error(error.message);
+        } else {
+          // localStorage fallback
+          const users = window.WinzoAuth.getUsers();
+          const u = users.find(x => x.uid === session.uid);
+          if (!u || u.password !== current) throw new Error("Current password is incorrect.");
+          u.password = newPw;
+          window.WinzoAuth.saveUsers(users);
+        }
+        window.WinzoAuth.toast("Password updated successfully!", "success");
+        document.getElementById("cp-current").value = "";
+        document.getElementById("cp-new").value = "";
+        document.getElementById("cp-confirm").value = "";
+      } catch(e) {
+        window.WinzoAuth.toast(e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph ph-lock-key"></i> Update Password';
+      }
+    }
+  </script>
+  <nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="mbn-item"><i class="ph-fill ph-house"></i><span>Lobby</span></a>
+    <a href="ludo.html" class="mbn-item"><i class="ph-fill ph-crown"></i><span>Ludo</span></a>
+    <a href="snake-ladder.html" class="mbn-item"><i class="ph-fill ph-path"></i><span>S&amp;L</span></a>
+    <a href="profile.html" class="mbn-item active"><i class="ph-fill ph-user-circle"></i><span>Profile</span></a>
+  </nav>
+  <script>
+    const hb = document.getElementById('nav-hamburger');
+    const nl = document.getElementById('nav-links');
+    hb.addEventListener('click', () => { hb.classList.toggle('open'); nl.classList.toggle('open'); });
+    nl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { hb.classList.remove('open'); nl.classList.remove('open'); }));
+  </script>
+</body>
+</html>

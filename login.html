@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in — WinzoIndia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="auth-shell" data-testid="login-page">
+    <aside class="auth-visual">
+      <div class="auth-visual-content">
+        <span class="eyebrow">Welcome back, Champion</span>
+        <h2>Your throne is waiting.</h2>
+        <p>Sign in to jump straight into live tournaments, claim daily rewards and cash out your winnings instantly.</p>
+      </div>
+    </aside>
+
+    <section class="auth-form-wrap">
+      <a href="index.html" class="brand" style="margin-bottom:32px;">
+        <div class="brand-mark">W</div>
+        <div class="brand-name">Winzo<span>India</span></div>
+      </a>
+
+      <div class="auth-header">
+        <h1>Sign in</h1>
+        <p>Enter your credentials to access your gaming vault.</p>
+      </div>
+
+      <div id="login-error" class="form-error" data-testid="login-error"></div>
+
+      <!-- Sign-in form -->
+      <form id="login-form" class="form" data-testid="login-form" novalidate>
+        <div class="field">
+          <label for="identifier">Email or Phone</label>
+          <input id="identifier" name="identifier" type="text" placeholder="you@winzo.in or +91 98xxxxxxxx" required data-testid="login-identifier-input" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="•••••••••••" required minlength="6" data-testid="login-password-input" />
+        </div>
+
+        <div style="text-align:right;margin-top:-8px;margin-bottom:4px;">
+          <a href="#" id="forgot-link" style="font-size:0.85rem;color:var(--accent);font-weight:500;" data-testid="forgot-password-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" data-testid="login-submit-btn">
+          <i class="ph-fill ph-sign-in"></i> Sign in
+        </button>
+
+        <p class="auth-footer">
+          New to WinzoIndia? <a href="signup.html" data-testid="link-to-signup">Create an account</a>
+        </p>
+      </form>
+
+      <!-- Forgot password panel (hidden by default) -->
+      <div id="forgot-panel" style="display:none;">
+        <div class="auth-header" style="margin-bottom:24px;">
+          <h1 style="font-size:clamp(1.6rem,3vw,2.2rem);">Reset Password</h1>
+          <p>Enter your registered email and we'll send you a reset link.</p>
+        </div>
+        <div id="forgot-error" class="form-error"></div>
+        <div id="forgot-success" style="display:none;background:rgba(0,230,118,0.1);border:1px solid var(--success);border-radius:var(--radius-lg);padding:16px;color:var(--success);font-size:14px;margin-bottom:16px;"></div>
+        <form id="forgot-form" class="form" novalidate>
+          <div class="field">
+            <label for="reset-email">Email address</label>
+            <input id="reset-email" name="email" type="email" placeholder="you@winzo.in" required data-testid="reset-email-input" />
+          </div>
+          <button type="submit" id="forgot-submit-btn" class="btn btn-primary btn-block btn-lg">
+            <i class="ph-fill ph-paper-plane-right"></i> Send Reset Link
+          </button>
+        </form>
+        <div id="admin-contact-hint" style="display:none;margin-top:20px;padding:16px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;"><i class="ph ph-info"></i> Can't receive the email? Contact an admin to reset your password manually.</p>
+          <p style="font-size:13px;color:var(--text-muted);">Share your registered email with the admin and they can set a new password for you from the Admin Console → User Management → Reset Pass.</p>
+        </div>
+        <p class="auth-footer" style="margin-top:24px;">
+          <a href="#" id="back-to-login" style="color:var(--accent);font-weight:500;"><i class="ph ph-arrow-left"></i> Back to Sign in</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+  window.WinzoAuth.redirectIfAuthed();
+
+    const loginForm   = document.getElementById("login-form");
+    const forgotPanel = document.getElementById("forgot-panel");
+    const authHeader  = document.querySelector(".auth-header");
+    const errBox      = document.getElementById("login-error");
+
+    // ── Toggle panels ──
+    function showForgot() {
+      loginForm.style.display  = "none";
+      authHeader.style.display = "none";
+      forgotPanel.style.display = "block";
+      document.getElementById("reset-email").focus();
+    }
+    function showLogin() {
+      forgotPanel.style.display = "none";
+      loginForm.style.display   = "block";
+      authHeader.style.display  = "block";
+      document.getElementById("forgot-error").style.display = "none";
+      document.getElementById("forgot-success").style.display = "none";
+      document.getElementById("admin-contact-hint").style.display = "none";
+      document.getElementById("forgot-form").reset();
+    }
+
+    document.getElementById("forgot-link").addEventListener("click", (e) => { e.preventDefault(); showForgot(); });
+    document.getElementById("back-to-login").addEventListener("click", (e) => { e.preventDefault(); showLogin(); });
+
+    // ── Forgot password submit ──
+    document.getElementById("forgot-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email     = document.getElementById("reset-email").value.trim();
+      const errEl     = document.getElementById("forgot-error");
+      const successEl = document.getElementById("forgot-success");
+      const btn       = document.getElementById("forgot-submit-btn");
+      errEl.style.display = "none";
+      successEl.style.display = "none";
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ph ph-circle-notch" style="animation:spin 1s linear infinite"></i> Sending…';
+      try {
+        await window.WinzoAuth.resetPassword(email);
+        successEl.textContent = "✓ Reset link sent! Check your inbox (and spam folder).";
+        successEl.style.display = "block";
+        document.getElementById("forgot-form").reset();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = "block";
+        document.getElementById("admin-contact-hint").style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph-fill ph-paper-plane-right"></i> Send Reset Link';
+      }
+    });
+
+    // ── Sign in submit ──
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errBox.style.display = "none";
+      const identifier = loginForm.identifier.value.trim();
+      const password   = loginForm.password.value;
+      try {
+        await window.WinzoAuth.login(identifier, password);
+        window.WinzoAuth.toast("Welcome back!", "success");
+        setTimeout(() => window.location.href = "dashboard.html", 500);
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = "block";
+      }
+    });
+  </script>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</body>
+</html>

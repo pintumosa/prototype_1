@@ -1,0 +1,534 @@
+// ==========================================================
+// WinzoIndia - Auth utilities
+// Uses Firebase when configured; else localStorage fallback.
+// ==========================================================
+
+const WZ_KEYS = {
+  USERS: "winzo_users",
+  SESSION: "winzo_session"
+};
+
+// One-time cleanup: remove large cached arrays that bloat localStorage when Supabase is available
+(function wzPurgeStaleCache() {
+  if (!window.WINZO_SB) return;
+  ["winzo_users","winzo_sets_global","winzo_deposits","winzo_withdraws",
+   "winzo_reports","winzo_results","winzo_tournaments","winzo_games"].forEach(function(k) {
+    localStorage.removeItem(k);
+  });
+})();
+
+// In-memory caches to avoid repeated localStorage parses
+let _sessionCache = undefined;
+let _usersCache = null;
+
+function wzGetUsers() {
+  if (_usersCache !== null) return _usersCache;
+  // Only read from localStorage if Supabase is not available (pure offline fallback)
+  if (!window.WINZO_SB) {
+    try { _usersCache = JSON.parse(localStorage.getItem(WZ_KEYS.USERS) || "[]"); }
+    catch { _usersCache = []; }
+  } else {
+    _usersCache = [];
+  }
+  return _usersCache;
+}
+function wzSaveUsers(users) {
+  _usersCache = users;
+  // Only persist to localStorage when Supabase is unavailable to avoid quota errors
+  if (!window.WINZO_SB) {
+    try { localStorage.setItem(WZ_KEYS.USERS, JSON.stringify(users)); }
+    catch (e) { if (window.wzReportError) wzReportError("localStorage quota exceeded (users cache): " + e.message); }
+  }
+}
+function wzSetSession(user) {
+  _sessionCache = user;
+  localStorage.setItem(WZ_KEYS.SESSION, JSON.stringify(user));
+}
+function wzGetSession() {
+  if (_sessionCache !== undefined) return _sessionCache;
+  try { _sessionCache = JSON.parse(localStorage.getItem(WZ_KEYS.SESSION) || "null"); }
+  catch { _sessionCache = null; }
+  return _sessionCache;
+}
+function wzClearSession() {
+  _sessionCache = null;
+  _usersCache = null;
+  localStorage.removeItem(WZ_KEYS.SESSION);
+}
+
+function wzRequireAuth() {
+  const session = wzGetSession();
+  if (!session) {
+    window.location.href = "login.html";
+    return null;
+  }
+  return session;
+}
+
+function wzRedirectIfAuthed() {
+  if (wzGetSession()) window.location.href = "dashboard.html";
+}
+
+function wzToast(msg, type = "info", ms = 3200) {
+  let node = document.getElementById("wz-toast");
+  if (!node) {
+    node = document.createElement("div");
+    node.id = "wz-toast";
+    node.className = "toast";
+    node.setAttribute("data-testid", "wz-toast");
+    document.body.appendChild(node);
+  }
+  node.textContent = msg;
+  node.className = `toast ${type} show`;
+  clearTimeout(node._t);
+  node._t = setTimeout(() => node.classList.remove("show"), ms);
+}
+
+async function compressImage(file, maxWidthPx, qualityVal) {
+  if (file.type === "application/pdf") return file; // skip PDFs
+  return new Promise(function(resolve) {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidthPx / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        resolve(blob ? new File([blob], file.name, { type: "image/jpeg" }) : file);
+      }, "image/jpeg", qualityVal);
+    };
+    img.onerror = function() { resolve(file); };
+    img.src = url;
+  });
+}
+window.compressImage = compressImage;
+
+// ── Storj upload (shared for KYC + screenshots + reports) ──
+// Returns { url, key } on success, or throws.
+async function wzUploadToStorj(file, folder, token) {
+  const fnUrl = window.WINZO_ENV?.SUPABASE_URL + "/functions/v1/storj-upload";
+  const res = await fetch(fnUrl, {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, contentType: file.type, folder })
+  });
+  if (!res.ok) throw new Error("Presign failed: " + res.status);
+  const { uploadUrl, publicUrl, key } = await res.json();
+  await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+  return { url: publicUrl, key };
+}
+window.wzUploadToStorj = wzUploadToStorj;
+
+async function wzUploadKycFile(file, uid, token) {
+  if (window.WINZO_SB && token) {
+    try {
+      const { url, key } = await wzUploadToStorj(file, "kyc/" + uid, token);
+      return { kycUrl: url, kycKey: key };
+    } catch (e) { if (window.wzReportError) wzReportError("Storj KYC upload failed: " + e.message); else console.warn("Storj KYC upload failed: " + e.message); }
+    // When Supabase is active, skip base64 fallback to avoid localStorage quota errors
+    return { kycUrl: null, kycKey: null };
+  }
+  // Fallback: base64 (only when Supabase is not available)
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  return { kycUrl: dataUrl, kycKey: null };
+}
+
+async function wzSignup(payload) {
+  // payload: { fullName, phone, email, password, kycType, kycFile }
+
+  // ── Duplicate check (Supabase-first, localStorage fallback) ──
+  if (window.WINZO_SB) {
+    const { data: existing } = await window.WINZO_SB.from("users")
+      .select("uid").or(`email.eq.${payload.email},phone.eq.${payload.phone}`).limit(1);
+    if (existing && existing.length) throw new Error("An account with this email or phone already exists.");
+  } else {
+    const users = wzGetUsers();
+    if (users.find(u => u.email === payload.email || u.phone === payload.phone))
+      throw new Error("An account with this email or phone already exists.");
+  }
+
+  let uid = "u_" + Date.now();
+  let sbToken = null;
+
+  // ── Supabase Auth FIRST so we have real uid + token for KYC upload ──
+  if (window.WINZO_SB) {
+    try {
+      const { data, error } = await window.WINZO_SB.auth.signUp({
+        email: payload.email,
+        password: payload.password,
+        options: { data: { fullName: payload.fullName, phone: payload.phone } }
+      });
+      if (error) throw new Error(error.message);
+      if (data?.user?.id) uid = data.user.id;
+      sbToken = data?.session?.access_token || null;
+    } catch (e) {
+      throw new Error(e.message);
+    }
+  }
+
+  // ── Step 1: Insert user row + confirm email via edge function ──
+  if (window.WINZO_SB) {
+    try {
+      const res = await fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/auto-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (window.WINZO_ENV.SUPABASE_ANON_KEY || window.WINZO_ENV.SUPABASE_ANON) },
+        body: JSON.stringify({
+          uid, full_name: payload.fullName, phone: payload.phone,
+          email: payload.email, kyc_type: payload.kycType,
+          aadhaar_number: payload.aadhaarNumber || null,
+          pan_number: payload.panNumber || null,
+          kyc_url: null, kyc_key: null,
+          kyc_back_url: null, kyc_back_key: null,
+          pan_url: null, pan_key: null
+        })
+      });
+      const resJson = await res.json();
+      if (!res.ok) console.error("[WinzoAuth] auto-confirm/insert failed:", resJson.error);
+    } catch(e) { console.error("[WinzoAuth] auto-confirm edge fn failed:", e.message); }
+  }
+
+  // ── Step 2: Sign in fresh after confirm — retry with backoff so the
+  //    email_confirm flag has time to propagate in Supabase Auth ──
+  if (window.WINZO_SB) {
+    for (const delay of [600, 1200, 2000]) {
+      await new Promise(r => setTimeout(r, delay));
+      try {
+        const { data: signInData, error: signInErr } = await window.WINZO_SB.auth.signInWithPassword({ email: payload.email, password: payload.password });
+        if (signInData?.session?.access_token) { sbToken = signInData.session.access_token; break; }
+        if (signInErr && !signInErr.message.toLowerCase().includes("not confirmed")) break;
+      } catch(e) { console.warn("Post-confirm sign-in attempt failed:", e.message); }
+    }
+  }
+
+  // ── Step 3: Upload KYC files ──
+  const kycResult = payload.kycFile
+    ? await wzUploadKycFile(await compressImage(payload.kycFile, 1200, 0.75), uid, sbToken)
+    : { kycUrl: null, kycKey: null };
+  const kycBackResult = payload.kycBackFile
+    ? await wzUploadKycFile(await compressImage(payload.kycBackFile, 1200, 0.75), uid, sbToken)
+    : { kycUrl: null, kycKey: null };
+  const panResult = payload.panFile
+    ? await wzUploadKycFile(await compressImage(payload.panFile, 1200, 0.75), uid, sbToken)
+    : { kycUrl: null, kycKey: null };
+
+  // ── Step 4: Update DB with file URLs via service role (bypasses RLS) ──
+  if (window.WINZO_SB) {
+    try {
+      const res = await fetch(window.WINZO_ENV.SUPABASE_URL + "/functions/v1/auto-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (window.WINZO_ENV.SUPABASE_ANON_KEY || window.WINZO_ENV.SUPABASE_ANON) },
+        body: JSON.stringify({
+          uid, update_only: true,
+          kyc_url: kycResult.kycUrl, kyc_key: kycResult.kycKey,
+          kyc_back_url: kycBackResult.kycUrl, kyc_back_key: kycBackResult.kycKey,
+          pan_url: panResult.kycUrl, pan_key: panResult.kycKey
+        })
+      });
+      const resJson = await res.json();
+      if (!res.ok) console.error("[WinzoAuth] KYC URL update failed:", resJson.error);
+    } catch(e) { console.warn("[WinzoAuth] KYC URL update failed:", e.message); }
+  }
+
+  const user = {
+    uid,
+    fullName: payload.fullName,
+    phone: payload.phone,
+    email: payload.email,
+    kycType: payload.kycType,
+    aadhaarNumber: payload.aadhaarNumber || null,
+    panNumber: payload.panNumber || null,
+    kycUrl: kycResult.kycUrl,
+    kycKey: kycResult.kycKey,
+    kycBackUrl: kycBackResult.kycUrl,
+    kycBackKey: kycBackResult.kycKey,
+    panUrl: panResult.kycUrl,
+    panKey: panResult.kycKey,
+    kycVerified: false,
+    chips: 0,
+    wallet: 0,
+    createdAt: new Date().toISOString()
+  };
+
+  const users = wzGetUsers();
+  users.push(user);
+  wzSaveUsers(users);
+  wzSetSession({ ...user, password: undefined });
+  // Persist Supabase session so dashboard auth check passes immediately
+  if (window.WINZO_SB && sbToken) {
+    const { data: sbSession } = await window.WINZO_SB.auth.getSession();
+    if (sbSession?.session) localStorage.setItem("winzo_sb_session", JSON.stringify(sbSession.session));
+  }
+  return user;
+}
+
+async function wzLogin(identifier, password) {
+  // ── Supabase Auth ──
+  if (window.WINZO_SB) {
+    try {
+      const { data, error } = await window.WINZO_SB.auth.signInWithPassword({
+        email: identifier.includes("@") ? identifier : undefined,
+        phone: !identifier.includes("@") ? identifier : undefined,
+        password
+      });
+      if (error) {
+        // Email not confirmed — common for new users; surface clearly
+        if (error.message.toLowerCase().includes("email not confirmed") || error.message.toLowerCase().includes("not confirmed")) {
+          throw new Error("Please verify your email before signing in. Check your inbox for a confirmation link.");
+        }
+        throw new Error(error.message);
+      }
+      // Persist Supabase session so auth.updateUser() works across pages
+      if (data?.session) {
+        localStorage.setItem("winzo_sb_session", JSON.stringify(data.session));
+      }
+      // Sync fresh user data from Supabase DB (query by uid so RLS passes)
+      const { data: dbUser } = await window.WINZO_SB.from("users").select("*").eq("uid", data.user.id).maybeSingle();
+      const merged = dbUser ? {
+        uid: dbUser.uid, fullName: dbUser.full_name, phone: dbUser.phone,
+        email: dbUser.email, kycType: dbUser.kyc_type,
+        kycUrl: dbUser.kyc_url, kycKey: dbUser.kyc_key || null,
+        kycBackUrl: dbUser.kyc_back_url || null, kycBackKey: dbUser.kyc_back_key || null,
+        aadhaarNumber: dbUser.aadhaar_number || null, panNumber: dbUser.pan_number || null,
+        panUrl: dbUser.pan_url || null, panKey: dbUser.pan_key || null,
+        kycVerified: dbUser.kyc_verified, kycRejected: dbUser.kyc_rejected || false,
+        chips: dbUser.chips || 0, wallet: dbUser.chips || 0, createdAt: dbUser.created_at
+      } : {
+        uid: data.user.id, fullName: data.user.user_metadata?.fullName || identifier,
+        phone: data.user.user_metadata?.phone || "", email: data.user.email || identifier,
+        kycVerified: false, chips: 0, wallet: 0, createdAt: data.user.created_at
+      };
+      const users = wzGetUsers();
+      const idx = users.findIndex(u => u.uid === merged.uid || u.email === merged.email);
+      if (idx >= 0) users[idx] = merged; else users.push(merged);
+      wzSaveUsers(users);
+      wzSetSession({ ...merged, password: undefined });
+      return merged;
+    } catch (e) {
+      // Re-throw confirmed/auth errors directly — don't fall through to localStorage
+      if (e.message.includes("verify your email") || e.message.includes("Invalid login") || e.message.includes("Invalid credentials") || e.message.includes("password")) {
+        throw e;
+      }
+      if (window.wzReportError) wzReportError("Supabase login failed, trying local: " + e.message); else console.warn("Supabase login failed, trying local: " + e.message);
+    }
+  }
+
+  // ── localStorage fallback ──
+  const users = wzGetUsers();
+  const user = users.find(
+    u => (u.email === identifier || u.phone === identifier) && u.password === password
+  );
+  if (!user) throw new Error("Invalid credentials. Please try again.");
+  wzSetSession({ ...user, password: undefined });
+  return user;
+}
+
+function wzLogout() {
+  if (window.WINZO_SB) {
+    window.WINZO_SB.auth.signOut().catch(() => {});
+  }
+  localStorage.removeItem("winzo_sb_session");
+  wzClearSession();
+  window.location.href = "index.html";
+}
+
+async function wzResetPassword(email) {
+  if (window.WINZO_SB) {
+    const { error } = await window.WINZO_SB.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/login.html"
+    });
+    if (error) throw new Error(error.message);
+    return;
+  }
+  throw new Error("Password reset requires Supabase. Please contact support.");
+}
+
+// Expose to window
+window.WinzoAuth = {
+  signup: wzSignup,
+  login: wzLogin,
+  logout: wzLogout,
+  resetPassword: wzResetPassword,
+  session: wzGetSession,
+  requireAuth: wzRequireAuth,
+  redirectIfAuthed: wzRedirectIfAuthed,
+  toast: wzToast,
+  getUsers: wzGetUsers,
+  saveUsers: wzSaveUsers,
+  setSession: wzSetSession
+};
+
+// ---- Global settings (bonus phone, admin passcode) ----
+const WZ_SETTINGS_KEY = "winzo_settings";
+function wzGetSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(WZ_SETTINGS_KEY) || "{}");
+    return {
+      bonusPhone: s.bonusPhone || "+91 95186-85134",
+      adminUser:  s.adminUser  || "admin",
+      adminPass:  s.adminPass  || "winzo-admin-2026",
+      upiId:      s.upiId      || "winzoindia@upi",
+      upiName:    s.upiName    || "WinzoIndia",
+      upiQrUrl:   s.upiQrUrl   || ""
+    };
+  } catch { return { bonusPhone: "+91 95186-85134", adminUser: "admin", adminPass: "winzo-admin-2026", upiId: "winzoindia@upi", upiName: "WinzoIndia", upiQrUrl: "" }; }
+}
+async function wzLoadSettingsFromSupabase() {
+  if (!window.WINZO_SB) return;
+  try {
+    const { data } = await window.WINZO_SB.from("settings").select("key,value");
+    if (!data || !data.length) return;
+    const s = {};
+    data.forEach(function(r){ s[r.key] = r.value; });
+    localStorage.setItem(WZ_SETTINGS_KEY, JSON.stringify(s));
+  } catch(e) { if (window.wzReportError) wzReportError("Settings load failed: " + e.message); else console.warn("Settings load failed: " + e.message); }
+}
+function wzSaveSettings(patch) {
+  const cur = wzGetSettings();
+  const merged = { ...cur, ...patch };
+  localStorage.setItem(WZ_SETTINGS_KEY, JSON.stringify(merged));
+  if (!window.WINZO_SB) return;
+  Object.entries(patch).forEach(function([key, value]) {
+    window.WINZO_SB.from("settings").upsert({ key, value }).then(function(){});
+  });
+}
+window.WinzoSettings = { get: wzGetSettings, save: wzSaveSettings, load: wzLoadSettingsFromSupabase };
+
+// ---- Global sets pool (Supabase + localStorage) ----
+const WZ_SETS_KEY = "winzo_sets_global";
+async function wzGetSetsAsync() {
+  if (window.WINZO_SB) {
+    try {
+      const { data } = await window.WINZO_SB.from("challenges").select("*")
+        .order("at", { ascending: false });
+      if (data) {
+        const remote = data.map(r => ({ id:r.id, gameId:r.game_id, uid:r.uid, byName:r.by_name, value:r.value, gameType:r.game_type, acceptedBy:r.accepted_by, acceptedByName:r.accepted_by_name, acceptedAt:r.accepted_at, roomCode:r.room_code, roomCodeSharedAt:r.room_code_shared_at||null, roomCodeCopiedAt:r.room_code_copied_at||null, startedAt:r.started_at||null, startedBy:r.started_by||null, setterStartedAt:r.setter_started_at||null, acceptorStartedAt:r.acceptor_started_at||null, status:r.status||null, refunded:r.refunded||false, cancelledBy:r.cancelled_by||null, cancelledAt:r.cancelled_at||null, at:r.at }));
+        const local = wzGetSets();
+        const localMap = new Map(local.map(s => [s.id, s]));
+        // For each remote entry, prefer local version if local has newer info (acceptedBy, roomCode set locally but not yet in Supabase)
+        const merged = remote.map(r => {
+          const loc = localMap.get(r.id);
+          if (!loc) return r;
+          return {
+            ...r,
+            acceptedBy: r.acceptedBy || loc.acceptedBy || null,
+            acceptedByName: r.acceptedByName || loc.acceptedByName || null,
+            acceptedAt: r.acceptedAt || loc.acceptedAt || null,
+            roomCode: r.roomCode || loc.roomCode || null,
+            startedAt: r.startedAt || loc.startedAt || null,
+          };
+        });
+        // Only add local-only entries that are not cancelled/completed
+        const remoteIds = new Set(remote.map(s => s.id));
+        local.filter(s => !remoteIds.has(s.id) && s.status !== "cancelled" && s.status !== "completed").forEach(s => merged.push(s));
+        // Strip cancelled/completed before caching so stale local data never resurfaces
+        const clean = merged.filter(s => s.status !== "cancelled" && s.status !== "completed");
+        localStorage.setItem(WZ_SETS_KEY, JSON.stringify(clean));
+        return clean;
+      }
+    } catch(e) { if (window.wzReportError) wzReportError("Supabase sets fetch failed: " + e.message); else console.warn("Supabase sets fetch failed: " + e.message); }
+  }
+  try { return JSON.parse(localStorage.getItem(WZ_SETS_KEY) || "[]"); } catch { return []; }
+}
+function wzGetSets() {
+  try { return JSON.parse(localStorage.getItem(WZ_SETS_KEY) || "[]"); } catch { return []; }
+}
+async function wzSaveSetsAsync(arr) {
+  localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
+  if (!window.WINZO_SB) return;
+  // Only upsert entries that are new or changed (avoid full-table write on every poll)
+  try {
+    const rows = arr.map(s => ({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, room_code_shared_at:s.roomCodeSharedAt||null, room_code_copied_at:s.roomCodeCopiedAt||null, started_at:s.startedAt||null, started_by:s.startedBy||null, setter_started_at:s.setterStartedAt||null, acceptor_started_at:s.acceptorStartedAt||null, status:s.status||null, cancelled_by:s.cancelledBy||null, cancelled_at:s.cancelledAt||null, at:s.at }));
+    await window.WINZO_SB.from("challenges").upsert(rows);
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase sets save failed: " + e.message); else console.warn("Supabase sets save failed: " + e.message); }
+}
+function wzSaveSets(arr) {
+  localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
+  wzSaveSetsAsync(arr);
+}
+async function wzDeleteSet(id) {
+  const arr = (await wzGetSetsAsync()).filter(s => s.id !== id);
+  localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
+  if (!window.WINZO_SB) return;
+  try { await window.WINZO_SB.from("challenges").delete().eq("id", id); } catch(e) { if (window.wzReportError) wzReportError("Supabase set delete failed: " + e.message); else console.warn("Supabase set delete failed: " + e.message); }
+}
+window.WinzoSets = { get: wzGetSets, getAsync: wzGetSetsAsync, save: wzSaveSets, delete: wzDeleteSet,
+  saveOne: async function(s) {
+    const arr = wzGetSets();
+    const idx = arr.findIndex(x => x.id === s.id);
+    if (idx >= 0) arr[idx] = s; else arr.push(s);
+    localStorage.setItem(WZ_SETS_KEY, JSON.stringify(arr));
+    if (!window.WINZO_SB) return;
+    try { await window.WINZO_SB.from("challenges").upsert({ id:s.id, game_id:s.gameId||null, uid:s.uid, by_name:s.byName, value:s.value, game_type:s.gameType, accepted_by:s.acceptedBy||null, accepted_by_name:s.acceptedByName||null, accepted_at:s.acceptedAt||null, room_code:s.roomCode||null, room_code_shared_at:s.roomCodeSharedAt||null, room_code_copied_at:s.roomCodeCopiedAt||null, started_at:s.startedAt||null, started_by:s.startedBy||null, setter_started_at:s.setterStartedAt||null, acceptor_started_at:s.acceptorStartedAt||null, status:s.status||null, cancelled_by:s.cancelledBy||null, cancelled_at:s.cancelledAt||null, at:s.at }); } catch(e) { if (window.wzReportError) wzReportError("Supabase set saveOne failed: " + e.message); else console.warn("Supabase set saveOne failed: " + e.message); }
+  }
+};
+
+// ---- Deposits (Supabase + localStorage) ----
+async function wzSaveDepositAsync(dep) {
+  if (!window.WINZO_SB) return;
+  try {
+    await window.WINZO_SB.from("deposits").upsert({ id:dep.id, uid:dep.uid||null, user_name:dep.user, user_phone:dep.userPhone, user_email:dep.userEmail, amount:dep.amount, method:dep.method, txn_id:dep.txnId||null, status:dep.status });
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase deposit save failed: " + e.message); else console.warn("Supabase deposit save failed: " + e.message); }
+}
+window.WinzoDeposits = { saveOne: wzSaveDepositAsync };
+
+// ---- Results (Supabase + localStorage) ----
+async function wzSaveResultAsync(res) {
+  if (!window.WINZO_SB) return;
+  try {
+    await window.WINZO_SB.from("results").upsert({
+      id: res.id,
+      challenge_id: res.challengeId,
+      game_id: res.gameId || null,
+      submitter_uid: res.submitterUid,
+      submitter_name: res.submitterName,
+      submitter_phone: res.submitterPhone,
+      opponent_uid: res.opponentUid,
+      opponent_name: res.opponentName,
+      opponent_phone: res.opponentPhone,
+      game_type: res.gameType,
+      amount: res.amount,
+      room_code: res.roomCode,
+      result: res.result,
+      proof_url: res.proofUrl,
+      screenshot_at: res.screenshotAt || null,
+      status: res.status
+    });
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase result save failed: " + e.message); else console.warn("Supabase result save failed: " + e.message); }
+}
+window.WinzoResults = { saveOne: wzSaveResultAsync };
+
+// ---- Reports ----
+const WZ_REPORTS_KEY = "winzo_reports";
+function wzGetReports() {
+  try { return JSON.parse(localStorage.getItem(WZ_REPORTS_KEY) || "[]"); } catch { return []; }
+}
+function wzSaveReports(arr) { localStorage.setItem(WZ_REPORTS_KEY, JSON.stringify(arr)); }
+async function wzSaveReportAsync(rep) {
+  if (!window.WINZO_SB) return;
+  try {
+    await window.WINZO_SB.from("reports").upsert({ id:rep.id, reporter_uid:rep.reporterUid, reporter_name:rep.reporterName, opponent:rep.opponent, details:rep.details, proof_url:rep.proofUrl, status:rep.status });
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase report save failed: " + e.message); else console.warn("Supabase report save failed: " + e.message); }
+}
+window.WinzoReports = { get: wzGetReports, save: wzSaveReports, saveOne: wzSaveReportAsync };
+
+// ---- Withdrawals ----
+const WZ_WITHDRAWS_KEY = "winzo_withdraws";
+function wzGetWithdraws() {
+  try { return JSON.parse(localStorage.getItem(WZ_WITHDRAWS_KEY) || "[]"); } catch { return []; }
+}
+function wzSaveWithdraws(arr) { localStorage.setItem(WZ_WITHDRAWS_KEY, JSON.stringify(arr)); }
+async function wzSaveWithdrawAsync(w) {
+  if (!window.WINZO_SB) return;
+  try {
+    await window.WINZO_SB.from("withdraws").upsert({ id:w.id, uid:w.uid||null, user_name:w.user, user_phone:w.userPhone, user_email:w.userEmail, amount:w.amount, method:w.method, upi_id:w.upiId||null, status:w.status });
+  } catch(e) { if (window.wzReportError) wzReportError("Supabase withdraw save failed: " + e.message); else console.warn("Supabase withdraw save failed: " + e.message); }
+}
+window.WinzoWithdraws = { get: wzGetWithdraws, save: wzSaveWithdraws, saveOne: wzSaveWithdrawAsync };

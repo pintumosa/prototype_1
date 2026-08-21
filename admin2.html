@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard — WinzoIndia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/admin2.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     GATE
+════════════════════════════════════════════════ -->
+<div id="gate-wrap">
+  <div class="a2-gate-card">
+    <div class="a2-gate-logo">
+      <div class="brand-mark">W</div>
+      <span>WinzoIndia</span>
+    </div>
+    <h2>Admin Console</h2>
+    <p>Sign in with your admin account to continue.</p>
+    <form id="gate-form">
+      <div class="field">
+        <label>Email</label>
+        <input id="gate-username" type="email" placeholder="admin@yourdomain.com" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="passcode" type="password" placeholder="••••••••••" required autocomplete="current-password" />
+      </div>
+      <div id="gate-error" class="form-error"></div>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">
+        <i class="ph-fill ph-lock-open"></i> Unlock Dashboard
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DASHBOARD SHELL
+════════════════════════════════════════════════ -->
+<div id="dash-wrap" style="display:none;">
+
+  <!-- Sidebar -->
+  <aside class="a2-sidebar" id="sidebar">
+    <div class="a2-sidebar-logo">
+      <div class="brand-mark">W</div>
+      <span class="brand-name">Winzo<span style="color:var(--accent)">India</span></span>
+      <button class="a2-sidebar-close" id="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').style.display='none';"><i class="ph ph-x"></i></button>
+    </div>
+
+    <nav class="a2-nav">
+
+      <!-- Setup -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-parent" data-group="setup">
+          <i class="ph ph-gear"></i> Setup
+          <i class="ph ph-caret-down a2-caret"></i>
+        </button>
+        <div class="a2-nav-children" id="group-setup">
+          <button class="a2-nav-child" data-panel="deposit-report"><i class="ph ph-receipt"></i> Deposit Transaction Report</button>
+          <button class="a2-nav-child" data-panel="challenges-setup"><i class="ph ph-sword"></i> Challenges</button>
+          <button class="a2-nav-child" data-panel="blacklisted"><i class="ph ph-prohibit"></i> Blacklisted Names</button>
+        </div>
+      </div>
+
+      <!-- Game Management -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-parent" data-group="games">
+          <i class="ph ph-game-controller"></i> Game Management
+          <i class="ph ph-caret-down a2-caret"></i>
+        </button>
+        <div class="a2-nav-children" id="group-games">
+          <button class="a2-nav-child" data-panel="view-all-games"><i class="ph ph-list-bullets"></i> View All Games</button>
+          <button class="a2-nav-child" data-panel="add-game"><i class="ph ph-plus-circle"></i> Add New Game</button>
+        </div>
+      </div>
+
+      <!-- User Management -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-parent" data-group="users">
+          <i class="ph ph-users"></i> User Management
+          <i class="ph ph-caret-down a2-caret"></i>
+        </button>
+        <div class="a2-nav-children" id="group-users">
+          <button class="a2-nav-child" data-panel="view-all-users"><i class="ph ph-user-list"></i> View All Users</button>
+          <button class="a2-nav-child" data-panel="add-user"><i class="ph ph-user-plus"></i> Add New User</button>
+          <button class="a2-nav-child" data-panel="review-kyc"><i class="ph ph-identification-card"></i> Review KYC Users</button>
+          <button class="a2-nav-child" data-panel="fraud-users"><i class="ph ph-warning-octagon"></i> View Fraud Users</button>
+          <button class="a2-nav-child" data-panel="wallet-mismatch"><i class="ph ph-scales"></i> Wallet Mismatch Users</button>
+        </div>
+      </div>
+
+            <!-- Challenge Management -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-parent" data-group="challenges">
+          <i class="ph ph-sword"></i> Challenge Management
+          <i class="ph ph-caret-down a2-caret"></i>
+        </button>
+        <div class="a2-nav-children" id="group-challenges">
+          <button class="a2-nav-child" data-panel="challenges-24h"><i class="ph ph-clock-countdown"></i> Last 24h Challenges</button>
+          <button class="a2-nav-child" data-panel="search-challenges"><i class="ph ph-magnifying-glass"></i> Search Challenges</button>
+          <button class="a2-nav-child" data-panel="search-screenshots"><i class="ph ph-image-square"></i> Search Screenshots</button>
+          <button class="a2-nav-child" data-panel="all-challenges"><i class="ph ph-stack"></i> View All Challenges</button>
+        </div>
+      </div>
+
+      <!-- Running Challenges (top-level) -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-child" data-panel="running-challenges" style="width:100%;text-align:left;padding:10px 16px;">
+          <i class="ph ph-spinner-gap"></i> Running Challenges
+        </button>
+      </div>
+
+      <!-- Transaction Management -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-parent" data-group="transactions">
+          <i class="ph ph-currency-inr"></i> Transaction Management
+          <span class="a2-txn-dot" id="txn-nav-dot" style="display:none;"></span>
+          <i class="ph ph-caret-down a2-caret"></i>
+        </button>
+        <div class="a2-nav-children" id="group-transactions">
+          <button class="a2-nav-child" data-panel="new-deposit-requests"><i class="ph ph-bell-ringing"></i> New Deposit Requests<span class="a2-child-badge" id="dep-req-badge" style="display:none;"></span></button>
+          <button class="a2-nav-child" data-panel="txn-history"><i class="ph ph-receipt"></i> Transaction History</button>
+          <button class="a2-nav-child" data-panel="chip-history"><i class="ph ph-coins"></i> Chip History</button>
+          <button class="a2-nav-child" data-panel="deposits-2h"><i class="ph ph-clock"></i> Last 2h Deposits</button>
+          <button class="a2-nav-child" data-panel="recent-withdrawals"><i class="ph ph-arrow-up-right"></i> Recent Withdrawal Requests<span class="a2-child-badge" id="wd-req-badge" style="display:none;"></span></button>
+          <button class="a2-nav-child" data-panel="all-deposits"><i class="ph ph-arrow-down-left"></i> View All Deposits</button>
+          <button class="a2-nav-child" data-panel="all-withdrawals"><i class="ph ph-list-checks"></i> View All Withdraw Requests</button>
+          <button class="a2-nav-child" data-panel="manual-deposit"><i class="ph ph-plus"></i> Manual Deposit (Admin)</button>
+          <button class="a2-nav-child" data-panel="manual-withdraw-haoda"><i class="ph ph-hand-withdraw"></i> Manual Withdraw (Haoda)</button>
+          <button class="a2-nav-child" data-panel="manual-withdraw-admin"><i class="ph ph-hand-coins"></i> Manual Withdraw (Admin)</button>
+        </div>
+      </div>
+
+      <!-- Game Monitor -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-child" data-panel="game-monitor" style="width:100%;text-align:left;padding:10px 16px;">
+          <i class="ph ph-monitor-play"></i> Game Monitor
+        </button>
+      </div>
+
+      <!-- Screenshots -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-child" data-panel="search-screenshots" style="width:100%;text-align:left;padding:10px 16px;">
+          <i class="ph ph-image-square"></i> Screenshots
+        </button>
+      </div>
+
+      <!-- Settings -->
+      <div class="a2-nav-group">
+        <button class="a2-nav-child" data-panel="settings" style="width:100%;text-align:left;padding:10px 16px;">
+          <i class="ph ph-sliders"></i> Settings
+        </button>
+      </div>
+
+    </nav>
+
+    <div class="a2-sidebar-footer">
+      <button onclick="(function(){ var k=document.getElementById('topbar-title').dataset.panelKey; var l=document.getElementById('topbar-title').textContent; window.syncAndReload(k,l); if(window.pollNotifications) window.pollNotifications(); var i=document.getElementById('sidebar-refresh-icon'); i.style.animation='spin 0.6s linear'; setTimeout(function(){ i.style.animation=''; },700); })()" class="btn btn-secondary" style="width:100%;justify-content:center;font-size:12px;padding:10px;margin-bottom:8px;">
+        <i class="ph ph-arrows-clockwise" id="sidebar-refresh-icon"></i> Refresh
+      </button>
+      <a href="#" onclick="if(window.WINZO_SB)window.WINZO_SB.auth.signOut().finally(()=>window.location.href='index.html');else window.location.href='index.html';" class="btn btn-secondary" style="width:100%;justify-content:center;font-size:12px;padding:10px;">
+        <i class="ph ph-sign-out"></i> Exit to Site
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="a2-main">
+    <header class="a2-topbar">
+      <button class="a2-menu-toggle" id="menu-toggle">&#9776;</button>
+      <div class="a2-topbar-title" id="topbar-title">Dashboard Overview</div>
+      <div class="a2-topbar-right">
+        <button class="a2-refresh-btn" id="refresh-btn" onclick="(function(){ var k=document.getElementById('topbar-title').dataset.panelKey; var l=document.getElementById('topbar-title').textContent; window.syncAndReload(k,l); if(window.pollNotifications) window.pollNotifications(); document.getElementById('refresh-btn').querySelector('i').style.animation='spin 0.6s linear'; setTimeout(function(){ document.getElementById('refresh-btn').querySelector('i').style.animation=''; },700); })()" title="Refresh everything"><i class="ph ph-arrows-clockwise"></i></button>
+        <div class="a2-notif-wrap" id="notif-wrap">
+          <button class="a2-notif-btn" id="notif-btn" onclick="toggleNotifDropdown()">
+            <i class="ph ph-bell"></i>
+            <span class="a2-notif-badge" id="notif-badge" style="display:none;">0</span>
+          </button>
+          <div class="a2-notif-dropdown" id="notif-dropdown" style="display:none;">
+            <div class="a2-notif-header">Notifications</div>
+            <div id="notif-list"><div class="a2-notif-empty">No new notifications</div></div>
+          </div>
+        </div>
+        <span class="a2-badge-admin"><i class="ph-fill ph-shield-check"></i> Admin</span>
+      </div>
+    </header>
+
+    <div class="a2-content" id="main-content">
+      <!-- panels injected by JS -->
+    </div>
+  </div>
+
+</div><!-- end dash-wrap -->
+
+<!-- Sidebar overlay for mobile -->
+<div id="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').style.display='none';" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:299;"></div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script defer src="js/env.js"></script>
+  <script defer src="js/supabase-config.js"></script>
+<script defer src="js/auth.js"></script>
+<script defer src="js/admin2-data.js"></script>
+<script defer src="js/admin2-panels1.js"></script>
+<script defer src="js/admin2-panels2.js"></script>
+<script defer src="js/admin2.js"></script>
+</body>
+</html>
