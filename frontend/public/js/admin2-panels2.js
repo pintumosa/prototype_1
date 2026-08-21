@@ -297,6 +297,7 @@ PANELS["chip-history"] = function() {
 };
 
 
+PANELS["new-deposit-requests"] = function() {
   const reqs = getLiveDeposits().filter(function(d){ return d.type === "Deposit Request" && d.status === "pending"; }).sort(function(a,b){return new Date(b.time||0)-new Date(a.time||0);});
   return `<div class="a2-panel-head"><h2><i class="ph ph-bell-ringing"></i> New Deposit Requests</h2><span class="badge badge-yellow">${reqs.length} Pending</span></div>
 <div class="a2-table-wrap"><table class="a2-table"><thead><tr><th>#</th><th>User</th><th>Phone</th><th>Email</th><th>Amount</th><th>Method</th><th>Txn ID / UTR</th><th>Requested At</th><th>Action</th></tr></thead><tbody>
