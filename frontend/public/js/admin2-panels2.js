@@ -251,7 +251,52 @@ ${all.length ? all.map(function(t,i){ return `<tr>
 </tbody></table></div>`;
 };
 
-PANELS["new-deposit-requests"] = function() {
+PANELS["chip-history"] = function() {
+  var users = getLiveUsers();
+  function userName(uid) {
+    var u = users.find(function(x){ return x.uid === uid; });
+    return u ? (u.fullName || u.name || uid) : uid;
+  }
+  var rows = getLiveChipLedger();
+  // Build per-user summary
+  var summary = {};
+  rows.forEach(function(r) {
+    if (!summary[r.uid]) summary[r.uid] = { uid:r.uid, added:0, spent:0 };
+    if (r.direction === "credit") summary[r.uid].added += Number(r.amount||0);
+    else summary[r.uid].spent += Number(r.amount||0);
+  });
+  var summaryRows = Object.values(summary).sort(function(a,b){ return b.added - a.added; });
+
+  return `<div class="a2-panel-head"><h2><i class="ph ph-coins"></i> Chip History</h2><span class="badge badge-green">${rows.length} entries</span></div>
+
+  <!-- Per-user summary -->
+  <div class="a2-panel-head" style="margin-bottom:8px;margin-top:4px;"><h3 style="font-size:13px;"><i class="ph ph-users"></i> Per-User Summary</h3></div>
+  <div class="a2-search"><input type="text" placeholder="Search user..." oninput="filterTable(this,'chip-summary-tbody',0)" /></div>
+  <div class="a2-table-wrap"><table class="a2-table"><thead><tr><th>User</th><th>Total Added</th><th>Total Spent</th><th>Net</th></tr></thead>
+  <tbody id="chip-summary-tbody">
+  ${summaryRows.length ? summaryRows.map(function(s){
+    var net = s.added - s.spent;
+    return "<tr>" +
+      "<td><strong>" + esc(userName(s.uid)) + "</strong></td>" +
+      "<td style='color:var(--success);font-weight:700;'>+" + rupee(s.added) + "</td>" +
+      "<td style='color:var(--danger);font-weight:700;'>-" + rupee(s.spent) + "</td>" +
+      "<td style='font-weight:700;color:" + (net>=0?"var(--success)":"var(--danger)") + ";'>" + (net>=0?"+":"") + rupee(net) + "</td>" +
+    "</tr>";
+  }).join("") : emptyRow(4, "No chip history yet.")}
+  </tbody></table></div>
+
+  <!-- Full ledger -->
+  <div class="a2-panel-head" style="margin-bottom:8px;margin-top:20px;"><h3 style="font-size:13px;"><i class="ph ph-list"></i> Full Ledger</h3></div>
+  <div class="a2-search"><input type="text" placeholder="Search user or type..." oninput="filterTable(this,'chip-ledger-all-tbody',0)" /></div>
+  <div class="a2-table-wrap" id="chip-ledger-all-wrap">
+    <table class="a2-table"><thead><tr><th>User</th><th>Type</th><th>Direction</th><th>Amount</th><th>Note</th><th>Time</th></tr></thead>
+    <tbody id="chip-ledger-all-tbody">
+      <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:16px;">Loading...</td></tr>
+    </tbody></table>
+  </div>`;
+};
+
+
   const reqs = getLiveDeposits().filter(function(d){ return d.type === "Deposit Request" && d.status === "pending"; }).sort(function(a,b){return new Date(b.time||0)-new Date(a.time||0);});
   return `<div class="a2-panel-head"><h2><i class="ph ph-bell-ringing"></i> New Deposit Requests</h2><span class="badge badge-yellow">${reqs.length} Pending</span></div>
 <div class="a2-table-wrap"><table class="a2-table"><thead><tr><th>#</th><th>User</th><th>Phone</th><th>Email</th><th>Amount</th><th>Method</th><th>Txn ID / UTR</th><th>Requested At</th><th>Action</th></tr></thead><tbody>

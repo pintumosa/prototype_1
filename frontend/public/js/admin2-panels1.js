@@ -371,10 +371,43 @@ PANELS["user-profile"] = function() {
     <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:10px;padding:12px;"><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Joined</div><div style="font-weight:600;margin-top:4px;">${fmtTime(u.createdAt)}</div></div>
   </div>
 
+  <!-- Chip History -->
+  <div class="a2-panel-head" style="margin-bottom:12px;margin-top:20px;"><h3 style="font-size:14px;"><i class="ph ph-coins"></i> Chip History</h3>
+    <span class="badge badge-green" style="margin-left:8px;">Added: ${rupee(totalDeposited)}</span>
+    <span class="badge badge-red" style="margin-left:6px;">Spent: ${rupee(totalWithdrawn)}</span>
+  </div>
+  <div class="a2-table-wrap"><table class="a2-table">
+    <thead><tr><th>#</th><th>Type</th><th>Direction</th><th>Amount</th><th>Note</th><th>Time</th></tr></thead>
+    <tbody id="chip-ledger-tbody-${uid}">
+      <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:16px;">Loading...</td></tr>
+    </tbody>
+  </table></div>
+
   <!-- Game History -->
-  <div class="a2-panel-head" style="margin-bottom:12px;"><h3 style="font-size:14px;"><i class="ph ph-game-controller"></i> Game History</h3></div>
+  <div class="a2-panel-head" style="margin-bottom:12px;margin-top:20px;"><h3 style="font-size:14px;"><i class="ph ph-game-controller"></i> Game History</h3></div>
   <div class="a2-table-wrap"><table class="a2-table">
     <thead><tr><th>#</th><th>Game</th><th>Opponent</th><th>Amount</th><th>Result</th><th>Status</th><th>Time</th></tr></thead>
     <tbody>${gameRows}</tbody>
   </table></div>`;
+
+  // Load chip ledger async after render
+  setTimeout(function() {
+    var tbody = document.getElementById("chip-ledger-tbody-" + uid);
+    if (!tbody) return;
+    getLiveChipLedgerAsync(uid).then(function(rows) {
+      if (!rows.length) { tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--text-muted);padding:16px;'>No chip history yet.</td></tr>"; return; }
+      tbody.innerHTML = rows.map(function(r, i) {
+        var isCredit = r.direction === "credit";
+        var typeLabel = { deposit:"Deposit", withdraw:"Withdraw", game_win:"Game Win", game_loss:"Game Loss", game_entry:"Game Entry", refund:"Refund", bonus:"Bonus", admin:"Admin" }[r.type] || r.type;
+        return "<tr>" +
+          "<td>" + (i+1) + "</td>" +
+          "<td>" + typeLabel + "</td>" +
+          "<td><span style='color:" + (isCredit ? "var(--success)" : "var(--danger)") + ";font-weight:700;'>" + (isCredit ? "▲ Credit" : "▼ Debit") + "</span></td>" +
+          "<td style='font-weight:700;color:" + (isCredit ? "var(--success)" : "var(--danger)") + ";'>" + (isCredit ? "+" : "-") + rupee(r.amount) + "</td>" +
+          "<td style='font-size:12px;color:var(--text-muted);'>" + (r.note || "—") + "</td>" +
+          "<td style='font-size:11px;color:var(--text-muted);'>" + fmtTime(r.created_at) + "</td>" +
+        "</tr>";
+      }).join("");
+    });
+  }, 100);
 };

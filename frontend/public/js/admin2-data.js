@@ -184,6 +184,7 @@ window.syncAndReload = function(panelKey, panelLabel, targetId) {
     "all-challenges":        getLiveSetsAsync,
     "challenges-setup":      getLiveSetsAsync,
     "game-monitor":          function() { return Promise.all([getLiveSetsAsync(), getLiveResultsAsync()]); },
+    "chip-history":          getLiveChipLedgerAsync,
     "new-deposit-requests":  getLiveDepositsAsync,
     "txn-history":           function() { return Promise.all([getLiveDepositsAsync(), getLiveWithdrawalsAsync(), getLiveUsersAsync()]); },
     "deposits-2h":           getLiveDepositsAsync,
@@ -199,11 +200,34 @@ window.syncAndReload = function(panelKey, panelLabel, targetId) {
     "overview":              function() { return Promise.all([getLiveUsersAsync(), getLiveSetsAsync(), getLiveDepositsAsync(), getLiveWithdrawalsAsync(), getLiveReportsAsync()]); }
   };
   if (loaders[panelKey]) {
-    loaders[panelKey]().then(function() {
+    loaders[panelKey]().then(function(result) {
       var titleEl = document.getElementById("topbar-title");
       if (titleEl && titleEl.dataset.panelKey === panelKey) {
         window.loadPanel(panelKey, panelLabel);
         highlightRow();
+        // Chip history: populate full ledger table after render
+        if (panelKey === "chip-history") {
+          var users = getLiveUsers();
+          function uName(uid) { var u = users.find(function(x){ return x.uid===uid; }); return u?(u.fullName||u.name||uid):uid; }
+          var tbody = document.getElementById("chip-ledger-all-tbody");
+          var ledger = Array.isArray(result) ? result : getLiveChipLedger();
+          if (tbody && ledger.length) {
+            tbody.innerHTML = ledger.map(function(r,i){
+              var isCredit = r.direction==="credit";
+              var typeLabel = {deposit:"Deposit",withdraw:"Withdraw",game_win:"Game Win",game_loss:"Game Loss",game_entry:"Game Entry",refund:"Refund",bonus:"Bonus",admin:"Admin"}[r.type]||r.type;
+              return "<tr>" +
+                "<td><strong>"+esc(uName(r.uid))+"</strong></td>" +
+                "<td>"+typeLabel+"</td>" +
+                "<td><span style='color:"+(isCredit?"var(--success)":"var(--danger)")+";font-weight:700;'>"+(isCredit?"▲ Credit":"▼ Debit")+"</span></td>" +
+                "<td style='font-weight:700;color:"+(isCredit?"var(--success)":"var(--danger)")+"'>"+(isCredit?"+":"-")+rupee(r.amount)+"</td>" +
+                "<td style='font-size:12px;color:var(--text-muted);'>"+(r.note||"—")+"</td>" +
+                "<td style='font-size:11px;color:var(--text-muted);'>"+fmtTime(r.created_at)+"</td>" +
+              "</tr>";
+            }).join("");
+          } else if (tbody) {
+            tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--text-muted);padding:16px;'>No chip history yet.</td></tr>";
+          }
+        }
       }
     }).catch(function(){});
   }
@@ -249,6 +273,23 @@ function saveLiveTournaments(arr) {
     return { id:t.id, name:t.name, game:t.game, entry:t.entry||0, prize:t.prize||0, players:t.players||"0/0", status:t.status||"upcoming", start_time:t.start||null };
   })).then(function(){});
 }
+
+// ── Chip Ledger ───────────────────────────────────────────────
+var CHIP_LEDGER_COLS = "id,uid,type,amount,direction,ref_id,note,created_at";
+var _chipLedgerCache = null;
+
+async function getLiveChipLedgerAsync(uid) {
+  if (!window.WINZO_SB) return [];
+  try {
+    let q = window.WINZO_SB.from("chip_ledger").select(CHIP_LEDGER_COLS).order("created_at", { ascending: false });
+    if (uid) q = q.eq("uid", uid);
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!uid) _chipLedgerCache = data;
+    return data || [];
+  } catch(e) { console.warn("chip_ledger fetch failed:", e.message); return _chipLedgerCache || []; }
+}
+function getLiveChipLedger() { return _chipLedgerCache || []; }
 
 // ── Helpers ───────────────────────────────────────────────────
 function rupee(n) { return "₹" + Number(n || 0).toLocaleString("en-IN"); }

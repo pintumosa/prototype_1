@@ -326,6 +326,13 @@
     const session = window.WinzoAuth.requireAuth();
     if (!session) throw new Error("not authed");
 
+    function logChipLedger(uid, type, amount, direction, refId, note) {
+      if (!window.WINZO_SB || !uid) return;
+      window.WINZO_SB.from("chip_ledger").insert({
+        uid, type, amount, direction, ref_id: refId || null, note: note || null
+      }).then(function(){});
+    }
+
     async function getChips(uid) {
       if (window.WINZO_SB) {
         try {
@@ -544,6 +551,7 @@
         const cur = await getChips(requesterUid);
         if (cur < s.value) { window.WinzoAuth.toast("Requester has insufficient chips.", "error"); try { await window.WINZO_SB.from("join_requests").update({status:"rejected"}).eq("id",reqId); } catch(e) {} _removeJR(reqId); return; }
         await setChips(requesterUid, cur - s.value);
+        logChipLedger(requesterUid, "game_entry", s.value, "debit", challengeId, "Challenge accepted — ₹" + s.value + " entry");
         const req = _jrQueue.find(r => r.id === reqId);
         s.acceptedBy = requesterUid; s.acceptedByName = req ? req.requester_name : "Player"; s.acceptedAt = new Date().toISOString();
         const localArr = window.WinzoSets.get();
@@ -612,6 +620,7 @@
       fresh.chips = chips - val; fresh.wallet = fresh.chips;
       window.WinzoAuth.saveUsers(users);
       if (window.WINZO_SB) try { await window.WINZO_SB.from("users").update({ chips: fresh.chips }).eq("uid", session.uid); } catch(e) {}
+      logChipLedger(session.uid, "game_entry", val, "debit", null, "Challenge posted — ₹" + val + " entry");
       const newSet = { id:"s_"+Date.now(), gameId:"WZ-"+Date.now().toString(36).toUpperCase()+Math.random().toString(36).substr(2,4).toUpperCase(), uid:session.uid, byName:session.fullName.split(" ")[0], value:val, gameType:gt, at:Date.now() };
       // Optimistically add to local storage first so renderSets shows it immediately
       const arr = window.WinzoSets.get();

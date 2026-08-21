@@ -65,6 +65,10 @@
         <div class="section-title" style="margin-bottom:16px;"><h2 style="font-size:1.2rem;">Transaction History</h2></div>
         <div id="txn-list"><p style="color:var(--text-secondary);font-size:14px;">Loading…</p></div>
       </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="section-title" style="margin-bottom:16px;"><h2 style="font-size:1.2rem;">Chip History</h2></div>
+        <div id="chip-ledger-list"><p style="color:var(--text-secondary);font-size:14px;">Loading…</p></div>
+      </div>
     </div>
 
     <!-- Account Tab -->
@@ -303,28 +307,52 @@
       if (txnLoaded) return;
       txnLoaded = true;
       const el = document.getElementById('txn-list');
-      if (!window.WINZO_SB || !session) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>'; return; }
+      const chipEl = document.getElementById('chip-ledger-list');
+      if (!window.WINZO_SB || !session) {
+        el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>';
+        chipEl.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">Not available.</p>';
+        return;
+      }
       const uid = session.uid;
-      const [{ data: deps }, { data: wds }] = await Promise.all([
+      const [{ data: deps }, { data: wds }, { data: ledger }] = await Promise.all([
         window.WINZO_SB.from('deposits').select('id,amount,status,created_at').eq('uid', uid).order('created_at', { ascending: false }),
-        window.WINZO_SB.from('withdraws').select('id,amount,status,created_at').eq('uid', uid).order('created_at', { ascending: false })
+        window.WINZO_SB.from('withdraws').select('id,amount,status,created_at').eq('uid', uid).order('created_at', { ascending: false }),
+        window.WINZO_SB.from('chip_ledger').select('type,amount,direction,note,created_at').eq('uid', uid).order('created_at', { ascending: false })
       ]);
       const rows = [
         ...(deps || []).map(d => ({ ...d, type: 'Deposit' })),
         ...(wds  || []).map(w => ({ ...w, type: 'Withdraw' }))
       ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      if (!rows.length) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No transactions yet.</p>'; return; }
-      const statusColor = { approved: '#22c55e', pending: '#f59e0b', rejected: '#ef4444' };
-      el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+      if (!rows.length) { el.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No transactions yet.</p>'; }
+      else {
+        const statusColor = { approved: '#22c55e', pending: '#f59e0b', rejected: '#ef4444' };
+        el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr style="color:var(--text-secondary);text-align:left;">
+            <th style="padding:8px 6px;">Type</th><th style="padding:8px 6px;">Amount</th><th style="padding:8px 6px;">Status</th><th style="padding:8px 6px;">Date</th>
+          </tr></thead><tbody>` +
+          rows.map(r => `<tr style="border-top:1px solid var(--border-subtle);">
+            <td style="padding:8px 6px;">${r.type}</td>
+            <td style="padding:8px 6px;">₹${r.amount}</td>
+            <td style="padding:8px 6px;color:${statusColor[r.status] || 'inherit'};font-weight:600;">${r.status}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`).join('') + '</tbody></table>';
+      }
+      // Chip ledger
+      if (!ledger || !ledger.length) { chipEl.innerHTML = '<p style="color:var(--text-secondary);font-size:14px;">No chip history yet.</p>'; return; }
+      const typeLabel = { deposit:'Deposit', withdraw:'Withdraw', game_win:'Game Win', game_loss:'Game Loss', game_entry:'Game Entry', refund:'Refund', bonus:'Bonus', admin:'Admin' };
+      chipEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead><tr style="color:var(--text-secondary);text-align:left;">
-          <th style="padding:8px 6px;">Type</th><th style="padding:8px 6px;">Amount</th><th style="padding:8px 6px;">Status</th><th style="padding:8px 6px;">Date</th>
+          <th style="padding:8px 6px;">Type</th><th style="padding:8px 6px;">Amount</th><th style="padding:8px 6px;">Note</th><th style="padding:8px 6px;">Date</th>
         </tr></thead><tbody>` +
-        rows.map(r => `<tr style="border-top:1px solid var(--border-subtle);">
-          <td style="padding:8px 6px;">${r.type}</td>
-          <td style="padding:8px 6px;">₹${r.amount}</td>
-          <td style="padding:8px 6px;color:${statusColor[r.status] || 'inherit'};font-weight:600;">${r.status}</td>
-          <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-        </tr>`).join('') + '</tbody></table>';
+        ledger.map(r => {
+          const isCredit = r.direction === 'credit';
+          return `<tr style="border-top:1px solid var(--border-subtle);">
+            <td style="padding:8px 6px;">${typeLabel[r.type] || r.type}</td>
+            <td style="padding:8px 6px;font-weight:700;color:${isCredit ? '#22c55e' : '#ef4444'};">${isCredit ? '+' : '-'}₹${r.amount}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);font-size:12px;">${r.note || '—'}</td>
+            <td style="padding:8px 6px;color:var(--text-secondary);">${new Date(r.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`;
+        }).join('') + '</tbody></table>';
     }
 
     let gamesLoaded = false;

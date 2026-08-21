@@ -296,10 +296,21 @@ window.adminChipOp = function (uid, direction) {
     time: new Date().toLocaleString("en-IN")
   });
   try { localStorage.setItem("winzo_deposits", JSON.stringify(txns)); } catch(e) {}
+  // Log to chip ledger
+  logChipLedger(uid, "admin", amt, direction > 0 ? "credit" : "debit", null, (direction > 0 ? "Admin added chips" : "Admin subtracted chips"));
   var el = document.getElementById("chips-" + uid);
   if (el) el.textContent = u.chips.toLocaleString("en-IN");
   showToast((direction > 0 ? "Added " : "Subtracted ") + amt + " chips " + (direction > 0 ? "to " : "from ") + (u.fullName || u.name) + ". Balance: " + u.chips, "success");
 };
+
+// ── Chip Ledger helper ────────────────────────────────────────
+function logChipLedger(uid, type, amount, direction, refId, note) {
+  if (!window.WINZO_SB || !uid) return;
+  window.WINZO_SB.from("chip_ledger").insert({
+    uid: uid, type: type, amount: amount, direction: direction,
+    ref_id: refId || null, note: note || null
+  }).then(function(){});
+}
 
 // ── Declare winner (admin manually credits chips to winner) ──
 window.adminDeclareWinner = async function(resultId, winnerUid, winnerName, prize) {
@@ -311,6 +322,7 @@ window.adminDeclareWinner = async function(resultId, winnerUid, winnerName, priz
   u.wallet = u.chips;
   saveLiveUsers(users);
   if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", winnerUid).then(function(){});
+  logChipLedger(winnerUid, "game_win", prize, "credit", resultId, "Game win — ₹" + prize + " prize");
 
   // Mark result as approved
   var results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
@@ -334,6 +346,7 @@ window.adminCancelResult = async function(resultId, uid1, uid2, entryAmount) {
       u.chips = Number(u.chips || 0) + entryAmount;
       u.wallet = u.chips;
       if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", uid).then(function(){});
+      logChipLedger(uid, "refund", entryAmount, "credit", resultId, "Game cancelled — entry refunded");
     }
   });
   saveLiveUsers(users);
@@ -366,6 +379,7 @@ window.adminDeleteSet = async function (id) {
         u.chips = Number(u.chips || 0) + Number(s.value || 0);
         u.wallet = u.chips;
         if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", uid).then(function(){});
+        logChipLedger(uid, "refund", Number(s.value || 0), "credit", id, "Challenge cancelled — entry refunded");
       }
     });
     saveLiveUsers(users);
@@ -956,6 +970,7 @@ window.showAddBlacklist = function () {
           u.chips = Number(u.chips || 0) + Number(s.value || 0);
           u.wallet = u.chips;
           if (window.WINZO_SB) window.WINZO_SB.from("users").update({ chips: u.chips }).eq("uid", uid).then(function(){});
+          logChipLedger(uid, "refund", Number(s.value || 0), "credit", s.id, "Auto-cancelled stale game — entry refunded");
         }
       });
     });
