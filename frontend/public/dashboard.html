@@ -881,7 +881,10 @@
       const opponentUid = isSetter ? match.acceptedBy : match.uid;
       const opponentName = isSetter ? match.acceptedByName : match.byName;
       const users = window.WinzoAuth.getUsers();
-      const opponent = users.find(u => u.uid === opponentUid);
+      let opponent = users.find(u => u.uid === opponentUid);
+      if (!opponent && window.WINZO_SB && opponentUid) {
+        try { const { data: od } = await window.WINZO_SB.from("users").select("phone").eq("uid", opponentUid).maybeSingle(); if (od) opponent = od; } catch(e) {}
+      }
 
       const results = JSON.parse(localStorage.getItem("winzo_results") || "[]");
       results.unshift({
@@ -901,6 +904,7 @@
         proofUrl,
         proofKey: proofKey || null,
         screenshotAt: new Date().toLocaleString("en-IN"),
+        matchedAt: match.acceptedAt || null,
         status: "pending",
         at: new Date().toLocaleString("en-IN")
       });

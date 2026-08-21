@@ -125,6 +125,7 @@ PANELS["search-screenshots"] = function() {
   var all = results.concat(reports.map(function(r){ return { _type:"report", submitterName:r.reporterName, submitterPhone:"—", opponentName:r.opponent, opponentPhone:"—", gameType:"—", amount:"—", result:"report", proofUrl:r.proofUrl, screenshotAt:r.screenshotAt||null, status:r.status, at:r.at||"—" }; }));
   all.sort(function(a,b){ return (a.gameId||"").localeCompare(b.gameId||""); });
   function getMatchedAt(r) {
+    if (r.matchedAt) return r.matchedAt;
     var s = sets.find(function(x){ return x.id === r.challengeId || x.gameId === r.gameId; });
     return s ? (s.acceptedAt||null) : null;
   }
