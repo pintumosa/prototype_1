@@ -40,6 +40,16 @@ serve(async (req) => {
       return new Response(bytes, { headers: { ...CORS, "Content-Type": obj.ContentType || "image/jpeg", "Content-Disposition": "inline" } });
     }
 
+    // ── Direct upload (server-side PUT) ──
+    if (body.action === "put-object") {
+      const { key, content, contentType } = body;
+      if (!key || !content) return new Response(JSON.stringify({ error: "key and content required" }), { status: 400, headers: CORS });
+      const s3 = makeS3();
+      const bytes = new TextEncoder().encode(content);
+      await s3.send(new PutObjectCommand({ Bucket: Deno.env.get("STORJ_BUCKET")!, Key: key, Body: bytes, ContentType: contentType || "text/plain" }));
+      return new Response(JSON.stringify({ ok: true, key }), { headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+
     // ── Presign upload (PUT) ──
     const { filename, contentType, folder } = body;
     if (!filename || !contentType) {
